@@ -1,30 +1,37 @@
 "use client";
-import { Chatting } from "@/components/trading/Chatting";
+
+import { useContext, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
+import Image from "next/image";
+import UserContext from "@/context/UserContext";
+import { useSocket } from "@/contexts/SocketContext";
+import { TokenDescription } from "@/components/trading/TokenDescription";
 import { TradeForm } from "@/components/trading/TradeForm";
 import { TradingChart } from "@/components/TVChart/TradingChart";
-import UserContext from "@/context/UserContext";
-import { coinInfo } from "@/utils/types";
-import { getCoinInfo } from "@/utils/util";
-import { usePathname, useRouter } from "next/navigation";
-import { useContext, useEffect, useState } from "react";
-import { IoMdArrowRoundBack } from "react-icons/io";
-import SocialList from "../others/socialList";
-import TokenData from "../others/TokenData";
-import { DataCard } from "../cards/DataCard";
-import { FaCopy } from "react-icons/fa6";
 import { successAlert } from "../others/ToastGroup";
+import { Holders } from "./Holder";
 import Spinner from "../loadings/Spinner";
+import { coinInfo, holderInfo, WowgoTokenDataType } from "@/utils/types";
+import { findHolders, getCoinInfo, getTokenAtaBeforeMigration, getTokenPriceAndChange } from "@/utils/util";
+import { IoIosArrowBack } from "react-icons/io";
+import { FaCopy } from "react-icons/fa6";
+import KingImage from "@/../public/assets/images/king.png";
+import { RiShare2Fill } from "react-icons/ri";
+import { quoteMint } from "@/program/web3";
 
 export default function TradingPage() {
   const { coinId, setCoinId, isLoading, setIsLoading, updateCoin, setUpdateCoin } = useContext(UserContext);
+  const { newSwapTradingSocket, setNewSwapTradingSocket } = useSocket();
   const pathname = usePathname();
   const [param, setParam] = useState<string>('');
-  const [progress, setProgress] = useState<number>(0);
-  const [daysAgo, setDaysAgo] = useState<string>("0d ago")
   const [coin, setCoin] = useState<coinInfo>({} as coinInfo);
+  const [holders, setHolders] = useState<holderInfo[]>([])
   const [copySuccess, setCopySuccess] = useState<string>(null);
+  const [curceAddress, setCurveAddress] = useState<string>("")
+  const [wowgoTokenData, setWowgoTokenData] = useState<WowgoTokenDataType>()
   const router = useRouter()
-  const limiteSolAmount: string | undefined = process.env.NEXT_PUBLIC_LIMITE_SOLAMOUNT;
+  const wallet = useWallet();
 
   const copyToClipBoard = async (copyMe: string) => {
     try {
@@ -37,40 +44,10 @@ export default function TradingPage() {
     }
   };
 
-  const getTimeAgo = (coinDate: Date) => {
-    const pastDate = new Date(coinDate); // Convert the ISO string to a Date object
-    const currentDate = new Date(); // Get the current local date and time
-    const differenceInMs = currentDate.getTime() - pastDate.getTime(); // Difference in milliseconds
-
-    if (differenceInMs < 1000 * 60 * 60 * 24) {
-      // Less than a day
-      if (differenceInMs < 1000 * 60) {
-        // Less than a minute
-        setDaysAgo("Just now");
-      } else {
-        const _minutesAgo = Math.floor(differenceInMs / (1000 * 60));
-        if (_minutesAgo < 60) {
-          // Less than an hour
-          setDaysAgo(`${_minutesAgo}m ago`);
-        } else {
-          // Less than an hour
-          const minutesAgo = Math.floor(_minutesAgo / 60);
-          setDaysAgo(`${minutesAgo}h ago`);
-        }
-      }
-    } else {
-      const daysAgo = Math.floor(differenceInMs / (1000 * 60 * 60 * 24)); // Convert ms to days
-      setDaysAgo(`${daysAgo}d ago`);
-    }
+  const handleToRouter = (id: string) => {
+    setIsLoading(true);
+    router.push(id);
   };
-
-  // const getLiquidity = () => {
-
-  // }
-
-  // const getMkpCap = () => {
-
-  // }
 
   const getData = (pathname: string) => {
     setIsLoading(true)
@@ -81,14 +58,45 @@ export default function TradingPage() {
         const parameter = segments[segments.length - 1];
         setParam(parameter);
         setCoinId(parameter);
-        console.log("parameter   ===>", parameter)
         const data = await getCoinInfo(parameter);
-        console.log("data  --->", data)
+        console.log("token data", data)
         setCoin(data);
-        setProgress(data.progressMcap)
-        // getLiquidity(data.progressMcap)
-        // getMkpCap(data.progressMcap)
-        getTimeAgo(data.date)
+        const curveData = await getTokenAtaBeforeMigration();
+        setCurveAddress(curveData.toString())
+        const holderData = await findHolders(data.token)
+        holderData.sort((a, b) => b.percentage - a.percentage);
+        setHolders(holderData)
+        const getTokenData = await getTokenPriceAndChange(quoteMint.toString())
+        if (getTokenData && typeof getTokenData === 'object') {
+          setWowgoTokenData(getTokenData);
+        } else {
+          setWowgoTokenData(undefined);
+        }
+        setIsLoading(false)
+      }
+      fetchData();
+    } catch (error) {
+      setIsLoading(false)
+    }
+  }
+
+  const getUpdatedData = (e: string) => {
+    try {
+      const fetchData = async () => {
+        const data = await getCoinInfo(e);
+        const curveData = await getTokenAtaBeforeMigration();
+        setCurveAddress(curveData.toString())
+        setCoin(data);
+        const holderData = await findHolders(data.token)
+        holderData.sort((a, b) => b.percentage - a.percentage);
+        setHolders(holderData)
+        const getTokenData = await getTokenPriceAndChange(quoteMint.toString())
+        if (getTokenData && typeof getTokenData === 'object') {
+          setWowgoTokenData(getTokenData);
+        } else {
+          setWowgoTokenData(undefined);
+        }
+        setNewSwapTradingSocket('')
         setIsLoading(false)
       }
       fetchData();
@@ -101,58 +109,88 @@ export default function TradingPage() {
     getData(pathname)
   }, [pathname, updateCoin]);
 
+  useEffect(() => {
+    console.log("newSwapTradingSocket getdata  --->", newSwapTradingSocket)
+    console.log("coin.token getdata  --->", coin.token)
+
+    if (newSwapTradingSocket === coin.token) {
+      console.log("newSwapTradingSocket geeeeeeee  --->")
+      getUpdatedData(newSwapTradingSocket)
+    }
+  }, [newSwapTradingSocket])
+
   return (
-    <div className="w-full flex flex-col px-3 mx-auto gap-5 pt-10 pb-20">
-      <div className="text-center">
-        <div className="w-full flex flex-col">
-          <div onClick={() => router.push('/')} className="w-24 cursor-pointer text-[#fdd52f] text-2xl flex flex-row items-center gap-2 pb-2">
-            <IoMdArrowRoundBack />
-            Back
-          </div>
-        </div>
+    <div className="flex flex-col gap-5 mx-auto px-3 pt-10 pb-20 w-full">
+      <div onClick={() => handleToRouter("/")} className="flex flex-row items-center gap-2 pb-2 w-[100px] text-[#9CA3AF] text-sm cursor-pointer">
+        <IoIosArrowBack />
+        Back
       </div>
-      <div className="w-full flex flex-col md3:flex-row gap-4">
-        {/* trading view chart  */}
-        <div className="w-full px-2">
-          <div className="w-full flex flex-col justify-between text-[#fdd52f] gap-2">
-            <div className="flex flex-row justify-between items-center gap-2 pb-2">
-              <p className="font-semibold">Contract Address : </p>
-              <p onClick={(e) => copyToClipBoard(coin?.token)} className="flex flex-row gap-1 items-center cursor-pointer hover:text-blue-500">
-                {coin?.token}
-                <FaCopy />
+      <div className="flex flex-col gap-4 w-full">
+        <div className="flex flex-row justify-between items-center w-full">
+          <div className="flex flex-row justify-start items-center gap-4 w-full">
+            <Image src={coin?.url || KingImage} alt="KingImage" width={20} height={20} className="rounded-full flex flex-col object-cover overflow-hidden w-7 h-7" />
+            <p className="font-bold text-[#090603] text-[24px]">{coin?.name || "Token"} {coin?.gameName ? ` / ${coin.gameName}` : ""}</p>
+            <p className="bg-[#090603] px-3 py-1 rounded-full text-[16px] text-white">{coin?.ticker || "TICKER"}</p>
+
+            <div className="flex flex-row justify-center items-center gap-2">
+              <p className="w-10 font-semibold text-[#4B5563] text-[10px] text-end">Market<br />Cap</p>
+              <p className="flex flex-row items-center gap-2 bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#FFF8E8_0%,_#FCD582_100%)] px-3 py-1 rounded-full font-semibold text-[#090603] cursor-pointer">
+                {(coin?.status === 3 || coin?.status === 5) &&
+                  <div className="flex flex-col justify-center items-center px-2 py-0.5 rounded-full font-bold text-[#090603] text-xs sm:text-base">
+                    {
+                      (coin?.marketcap !== null || coin?.marketcap !== undefined)
+                        ? (() => {
+                          const value = coin?.marketcap * wowgoTokenData?.price;
+
+                          if (value >= 1_000_000_000) {
+                            return '$' + (value / 1_000_000_000).toFixed(2) + 'B'; // Billions
+                          } else if (value >= 1_000_000) {
+                            return '$' + (value / 1_000_000).toFixed(2) + 'M'; // Millions
+                          } else if (value >= 1_000) {
+                            return '$' + (value / 1_000).toFixed(2) + 'k'; // Thousands
+                          } else {
+                            return '$' + value.toFixed(2); // Less than 1000
+                          }
+                        })()
+                        : "0.00"
+                    }
+                  </div>
+                }
               </p>
             </div>
-          </div>
-          <TradingChart param={coin}></TradingChart>
-          <Chatting param={param} coin={coin}></Chatting>
-        </div>
-        <div className="w-full max-w-[300px] 2xs:max-w-[420px] px-2 gap-4 flex flex-col mx-auto">
-          <TradeForm coin={coin} progress={progress}></TradeForm>
-          <TokenData coinData={coin} />
-          <div className="flex flex-col gap-3 border-[1px] border-[#fdd52f] rounded-lg">
-            <div className="w-full flex flex-col gap-2 px-3 py-2 ">
-              <p className="text-white text-base lg:text-xl">
-                Completion : {`${coin.bondingCurve === false ? (progress / Number(limiteSolAmount) * 100).toFixed(2) : "Done"}`}% of {daysAgo}
+
+            <div className="flex flex-row justify-center items-center gap-2">
+              <p className="w-10 font-semibold text-[#4B5563] text-[10px] text-end">Virtual<br />Liquidity</p>
+              <p className="flex flex-row items-center gap-2 bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#FFF8E8_0%,_#FCD582_100%)] px-3 py-1 rounded-full font-semibold text-[#090603] cursor-pointer">
+                $45.14k
               </p>
-              <div className="bg-[#ff1cff] rounded-full h-2 relative object-cover overflow-hidden">
-                <div
-                  className="bg-[#fdd52f] h-2"
-                  style={{ width: `${coin.bondingCurve === false ? (progress / Number(limiteSolAmount) * 100) : "100"}%` }}  // Fix: Corrected percentage calculation
-                ></div>
-              </div>
+            </div>
+
+            <div className="flex flex-row justify-center items-center gap-2">
+              <p className="w-10 font-semibold text-[#4B5563] text-[10px] text-end">Contract<br />Address</p>
+              <p className="flex flex-row items-center gap-2 bg-[#FFFFFC] shadow-sm px-3 py-1 rounded-full font-semibold text-[#1F2937] text-[12px]">
+                {coin?.token?.toString().slice(0, 5)}...{coin?.token?.toString().slice(-4)}
+                <FaCopy onClick={(e) => copyToClipBoard(coin?.token)} className="text-[#2B35E1] text-[12px] cursor-pointer" />
+              </p>
             </div>
           </div>
 
-          {/* <div className="w-full flex flex-col gap-4 text-[#f52a6d]">
-            <div className="w-full flex flex-col 2xs:flex-row gap-4 items-center justify-between">
-              <DataCard text="Liquidity" data={progress} />
-              <DataCard text="MKP CAP" data={progress} />
-            </div>
-          </div> */}
-          <SocialList data={coin} />
+          <div onClick={(e) => copyToClipBoard(coin?.token)} className="flex flex-row justify-center items-center gap-2 bg-[#FFFFFC] shadow-sm px-4 py-3 rounded-[12px] text-[#2B35E1] cursor-pointer">
+            <RiShare2Fill className="text-xl" />
+            <p className="font-semibold text-base">Share</p>
+          </div>
+        </div>
+
+        <div className="flex flex-row gap-4 px-2 w-full">
+          <TradingChart param={coin}></TradingChart>
+          <TradeForm coin={coin}></TradeForm>
+        </div>
+        <div className="flex flex-row gap-4 px-2 w-full">
+          <TokenDescription coin={coin} mainToken={wowgoTokenData} />
+          <Holders holder={holders} curve={curceAddress} creator={coin?.creator} />
         </div>
       </div>
       {isLoading && <Spinner />}
-    </div>
+    </div >
   );
 }

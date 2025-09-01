@@ -1,4 +1,5 @@
 "use client"
+
 import Link from 'next/link';
 import { coinInfo } from "@/utils/types";
 import { FC } from "react";

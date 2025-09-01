@@ -38,11 +38,17 @@ export interface metadataInfo {
   twitter?: string,
   website?: string,
   telegram?: string,
+  discord?: string,
+  contactEmail?: string,
+  contactTelegram?: string,
+  gameName?: string,
+  gameLink?: string,
+  buttonLabel?: string,
+  gameImage?: string,
 }
 
 export interface coinInfo {
-  progressMcap: number;
-  lamportReserves: number;
+  quoteReserves: number;
   tokenReserves: number;
   commit: any;
   _id?: string;
@@ -61,8 +67,17 @@ export interface coinInfo {
   twitter?: string;
   website?: string;
   telegram?: string;
+  discord?: string,
+  contactEmail?: string,
+  contactTelegram?: string,
+  gameName?: string,
+  gameLink?: string,
+  buttonLabel?: string,
+  gameImage?: string,
   date?: Date;
   bondingCurve: boolean;
+  status: number;
+  progressPresale: number;
 }
 
 export interface createCoinInfo {
@@ -76,6 +91,14 @@ export interface createCoinInfo {
   twitter?: string,
   website?: string,
   telegram?: string,
+  discord?: string,
+  contactEmail?: string,
+  contactTelegram?: string,
+  gameName?: string,
+  gameLink?: string,
+  buttonLabel?: string,
+  gameImage?: string,
+
 }
 
 export interface launchDataInfo {
@@ -101,9 +124,11 @@ export interface tradeInfo {
 }
 
 export interface holderInfo {
-  slice: string;
+  account: string;
   owner: string;
-  amount: number
+  percentage: number;
+  amount: number;
+  slice: string
 }
 
 export interface recordInfo {
@@ -157,3 +182,9 @@ export type SwapInfo = {
   mintSymbol: string;
   mintUri: string;
 };
+
+export type WowgoTokenDataType = {
+  price: number;
+  changeIn24h: number;
+  liquidity: number;
+}

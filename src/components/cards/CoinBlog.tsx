@@ -1,14 +1,13 @@
-import { coinInfo, userInfo } from "@/utils/types";
+import { coinInfo, userInfo, WowgoTokenDataType } from "@/utils/types";
 import Image from "next/image";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import UserContext from "@/context/UserContext";
-import { TbWorld } from "react-icons/tb";
-import { FaXTwitter } from "react-icons/fa6";
-import { FaTelegramPlane } from "react-icons/fa";
 import NotImage from "@/../public/assets/images/no-image.png"
-
-const limiteSolAmount: string | undefined = process.env.NEXT_PUBLIC_LIMITE_SOLAMOUNT;
+import KingsIcon from "@/../public/assets/images/king.png";
+import PresaleIcon from "@/../public/assets/images/presale.png"
+import UserAvatar from "@/../public/assets/images/user-avatar.png";
+import { getTokenPriceAndChange } from "@/utils/util";
+import { quoteMint } from "@/program/web3";
 
 interface CoinBlogProps {
   coin: coinInfo;
@@ -16,18 +15,21 @@ interface CoinBlogProps {
 }
 
 export const CoinBlog: React.FC<CoinBlogProps> = ({ coin, componentKey }) => {
-  const { solPrice } = useContext(UserContext);
   const [timeAgo, setTimeAgo] = useState<string>("0d ago");
-  const [marketCapValue, setMarketCapValue] = useState<number>(0)
+  const [wowgoTokenData, setWowgoTokenData] = useState<WowgoTokenDataType>()
   const router = useRouter()
 
   const handleToProfile = (id: string) => {
     router.push(`/profile/${id}`)
   }
 
-  const getMarketCapData = async (coin: coinInfo) => {
-    const prog = coin.reserveTwo * 1000000 * solPrice / (coin.reserveOne * coin.marketcap);
-    setMarketCapValue(prog > 1 ? 100 : Math.round(prog * 100000) / 1000);
+  const getTokenMetadata = async () => {
+    const getTokenData = await getTokenPriceAndChange(quoteMint.toString())
+    if (getTokenData && typeof getTokenData === 'object') {
+      setWowgoTokenData(getTokenData);
+    } else {
+      setWowgoTokenData(undefined);
+    }
   }
 
   const getTimeAgo = (coinDate: Date) => {
@@ -58,63 +60,81 @@ export const CoinBlog: React.FC<CoinBlogProps> = ({ coin, componentKey }) => {
   };
 
   useEffect(() => {
-    getMarketCapData(coin)
+    getTokenMetadata()
     getTimeAgo(coin.date)
   }, [coin])
 
   return (
-    <div className="flex flex-col h-full items-center justify-between border-[#fdd52f] border-[1px] rounded-lg text-[#fdd52f] gap-2 object-cover overflow-hidden">
-      <div className="flex flex-row w-full">
-        <div className="relative w-36 h-36 rounded-tl-md overflow-hidden items-center justify-center flex flex-col px-1">
+    <div className="flex flex-col justify-between items-center gap-2 rounded-lg h-full object-cover overflow-hidden text-[#fdd52f]">
+      <div className="flex flex-row p-3 w-full">
+        <div className="relative flex flex-col justify-center items-center px-1 rounded-tl-md w-[181px] h-[181px] overflow-hidden">
           <Image
             src={coin?.url ? coin.url : NotImage}
             alt="image"
-            width={144}
-            height={144}
-            className="object-cover flex items-center rounded-lg"
+            width={181}
+            height={181}
+            className="flex items-center rounded-lg object-cover"
           />
         </div>
-        <div className="flex flex-col w-full px-2 gap-1 py-1">
-          <div className="w-full text-base text-[#fdd52f] font-semibold">
-            {coin?.name} [ {coin?.ticker} ]
-          </div>
-          <div className="flex flex-row gap-1 text-sm">
-            <div className="flex flex-row gap-1 items-center">
-              Created by :
-            </div>
-            <div onClick={() => handleToProfile((coin?.creator as userInfo)?._id)}>
-              <div className="text-[#1f47ca] px-1">
-                {(coin?.creator as userInfo)?.name}
+        <div className="flex flex-col gap-1 px-2 py-1 w-full max-w-[193px] h-[181px]">
+          <div className="flex flex-col gap-2 w-full h-full">
+            <div className="flex flex-row justify-between items-start w-full">
+              <div className="w-full font-semibold text-[#090603] text-base">
+                {coin?.name} [ {coin?.ticker} ]
               </div>
+              {coin?.status === 5 && (
+                <Image src={KingsIcon} alt="KingsIcon" width={20} height={20} className="w-5 h-5" />
+              )}
+              {(coin.status === 0 || coin.status === 1 || coin.status === 2) && (
+                <Image src={PresaleIcon} alt="PresaleIcon" width={20} height={20} className="w-5 h-5" />
+              )}
             </div>
-          </div>
-          <div className="text-xs h-[28px] object-cover overflow-hidden break-words">{coin?.description}</div>
-          <div className="w-full h-4 flex flex-row gap-1 justify-end items-center text-[#fdd52f] text-base">
-            {(coin?.twitter && coin?.twitter !== undefined) && <FaXTwitter />}
-            {(coin?.telegram && coin?.telegram !== undefined) && <FaTelegramPlane />}
-            {(coin?.website && coin?.website !== undefined) && <TbWorld />}
-          </div>
-          <div className="w-full flex flex-col text-xs gap-1">
-            <div className="w-full flex flex-row items-center justify-between">
-              <div className="flex flex-row gap-1 items-center">
-                MCAP :
-                <div className="text-[#1f47ca] font-bold">
-                  {(coin?.progressMcap !== null || coin?.progressMcap !== undefined)
-                    ? coin.progressMcap > 1000
-                      ? '$' + (Math.ceil(coin.progressMcap) / 1000 * solPrice).toFixed(2) + 'k'
-                      : '$' + (coin?.progressMcap * solPrice).toFixed(2)
-                    : 'N/A'}
+
+            <div className="flex flex-row gap-1 text-sm">
+              <Image src={UserAvatar} alt="UserAvatar" width={20} height={20} className="rounded-full w-5 h-5" />
+              <div onClick={() => handleToProfile((coin?.creator as userInfo)?._id)}>
+                <div className="px-1 text-[#090603]">
+                  {(coin?.creator as userInfo)?.name ? (coin?.creator as userInfo)?.name : "AWd...Qx3A"}
                 </div>
               </div>
-              <div className="text-[#1f47ca] font-bold">
+            </div>
+
+            <div className="h-[58px] object-cover overflow-hidden text-[#4B5563] text-[12px] break-words">{coin?.description ? coin?.description : "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent dapibus non leo sit amet porttitor. Aliquam varius, ipsum et eleifend elementum, lacus turpis cursus ipsum, non egestas urna erat id tortor."}</div>
+          </div>
+
+          <div className="flex flex-col gap-1 w-full">
+            <div className="flex flex-row justify-between items-center w-full">
+              {(coin?.status === 3 || coin?.status === 5) &&
+                <div className="flex flex-row items-center gap-2 font-semibold">
+                  <p className="text-[#4B5563] text-[10px] text-end">
+                    Market <br />
+                    Cap
+                  </p>
+                  <div className="flex flex-col justify-center items-center bg-[linear-gradient(180deg,_#FFF8E8_0%,_#FCD582_100%)] px-2 py-0.5 rounded-full font-bold text-[#090603] text-[10px]">
+                    {
+                      (coin?.marketcap !== null || coin?.marketcap !== undefined)
+                        ? (() => {
+                          const value = coin?.marketcap * wowgoTokenData?.price;
+
+                          if (value >= 1_000_000_000) {
+                            return '$' + (value / 1_000_000_000).toFixed(2) + 'B'; // Billions
+                          } else if (value >= 1_000_000) {
+                            return '$' + (value / 1_000_000).toFixed(2) + 'M'; // Millions
+                          } else if (value >= 1_000) {
+                            return '$' + (value / 1_000).toFixed(2) + 'k'; // Thousands
+                          } else {
+                            return '$' + value.toFixed(2); // Less than 1000
+                          }
+                        })()
+                        : "0.00"
+                    }
+                  </div>
+
+                </div>
+              }
+              <div className="bg-[#EEF4FF] px-2 py-0.5 rounded-full font-bold text-[#090603] text-[10px] ml-auto">
                 {timeAgo}
               </div>
-            </div>
-            <div className="w-full h-2 rounded-full bg-[#ff1cff] relative flex object-cover overflow-hidden">
-              <div
-                className="justify-start h-2 absolute top-0 left-0 bg-[#fdd52f]"
-                style={{ width: `${coin?.progressMcap / Number(limiteSolAmount) * 100}%` }}  // Fix: Corrected percentage calculation
-              />
             </div>
           </div>
         </div>

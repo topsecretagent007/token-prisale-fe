@@ -1,7 +1,10 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { ChartTable, coinInfo, holderInfo, msgInfo, replyInfo, userInfo } from './types';
+import { coinInfo, holderInfo, msgInfo, replyInfo, userInfo } from './types';
+import { PublicKey } from '@solana/web3.js';
+import { pumpProgramId } from '@/program/web3';
+import { BACKEND_URL } from '@/config/TextData';
 
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const JWT = process.env.NEXT_PUBLIC_PINATA_PRIVATE_KEY;
 
 const headers: Record<string, string> = {
   'ngrok-skip-browser-warning': 'true'
@@ -20,20 +23,15 @@ export const test = async () => {
 export const getUser = async ({ id }: { id: string }): Promise<any> => {
   try {
     const response = await axios.get(`${BACKEND_URL}/user/${id}`, config);
-    console.log('response:', response.data);
     return response.data;
   } catch (err) {
     return { error: 'error setting up the request' };
   }
 };
 
-export const updateUser = async (id: string, data: userInfo): Promise<any> => {
+export const updateUser = async (data: userInfo): Promise<any> => {
   try {
-    console.log("update user ==>", data)
-    console.log(`${BACKEND_URL}/user/update/${id}`);
-    const response = await axios.post(`${BACKEND_URL}/user/update/${id}`, data, config);
-    console.log("update user response ==>", response)
-
+    const response = await axios.post(`${BACKEND_URL}/user/update/`, data, config);
     return response.data;
   } catch (err) {
     return { error: 'error setting up the request' };
@@ -42,10 +40,7 @@ export const updateUser = async (id: string, data: userInfo): Promise<any> => {
 
 export const walletConnect = async ({ data }: { data: userInfo }): Promise<any> => {
   try {
-    console.log("walletConnect data   =>", data)
     const response = await axios.post(`${BACKEND_URL}/user/`, data);
-    console.log("walletConnect response   =>", response)
-
     return response.data;
   } catch (err) {
     return { error: 'error setting up the request' };
@@ -71,13 +66,17 @@ export const getCoinsInfo = async (): Promise<coinInfo[]> => {
 };
 
 export const getCoinsInfoBy = async (id: string): Promise<coinInfo[]> => {
-  const res = await axios.get<coinInfo[]>(`${BACKEND_URL}/coin/user/${id}`, config);
-  return res.data;
+  try {
+    const res = await axios.get<any>(`${BACKEND_URL}/coin/user/${id}`, config);
+    return res.data;
+  } catch (error) {
+    console.error('Error fetching coin info:', error);
+  }
 };
 
 export const getCoinInfo = async (data: string): Promise<any> => {
   try {
-    const response = await axios.get(`${BACKEND_URL}/coin/${data}`, config);
+    const response = await axios.get(`${BACKEND_URL}/coin/token/${data}`);
     return response.data;
   } catch (err) {
     return { error: 'error setting up the request' };
@@ -125,52 +124,69 @@ export const postReply = async (data: replyInfo) => {
 
 // ================== Get Holders ===========================
 export const findHolders = async (mint: string) => {
-  // Pagination logic
   let page = 1;
-  // allOwners will store all the addresses that hold the token
   let allOwners: holderInfo[] = [];
 
   while (true) {
-    const response = await fetch(process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://devnet.helius-rpc.com/?api-key=44b7171f-7de7-4e68-9d08-eff1ef7529bd', {
-      //   const response = await fetch("https://white-aged-glitter.solana-mainnet.quiknode.pro/743d4e1e3949c3127beb7f7815cf2ca9743b43a6/", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'getTokenAccounts',
-        id: 'helius-test',
-        params: {
-          page: page,
-          limit: 1000,
-          displayOptions: {},
-          //mint address for the token we are interested in
-          mint: mint
-        }
-      })
-    });
-
-    console.log("response   =>>>", response)
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_SOLANA_RPC ||
+      'https://devnet.helius-rpc.com/?api-key=44b7171f-7de7-4e68-9d08-eff1ef7529bd',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'getTokenAccounts',
+          id: 'helius-test',
+          params: {
+            page,
+            limit: 1000,
+            displayOptions: {},
+            mint,
+          },
+        }),
+      }
+    );
 
     const data = await response.json();
 
-    console.log("data   =>>>", data)
+    if (!data.result || data.result.token_accounts.length === 0) break;
 
-    // Pagination logic.
-    if (!data.result || data.result.token_accounts.length === 0) {
-      break;
-    }
-    console.log("holders", data)
-    // Adding unique owners to a list of token owners.
+    // Add this logic to compute total amount
+    const totalAmount = data.result.token_accounts.reduce(
+      (acc, account) => acc + Number(account.amount),
+      0
+    );
+
     data.result.token_accounts.forEach((account) => {
-      allOwners.push({ slice: account.owner.slice(0, 3) + `...` + account.owner.slice(-4), owner: account.owner, amount: account.amount });
+      const amount = Number(account.amount);
+      const percentage = ((amount / totalAmount) * 100).toFixed(2); // 2 decimal places
+
+      allOwners.push({
+        slice: account.owner.slice(0, 3) + `...` + account.owner.slice(-4),
+        owner: account.owner,
+        amount: Number(account.amount), // Ensure amount is a number
+        account: account.account,
+        percentage: Number(percentage), // Ensure percentage is a number
+      });
     });
+
     page++;
   }
 
   return allOwners;
 };
+
+export const getTokenAtaBeforeMigration = async () => {
+
+  const globalVault = PublicKey.findProgramAddressSync(
+    [Buffer.from("global")],
+    pumpProgramId
+  )[0]
+  return globalVault
+}
 
 export const getSolPriceInUSD = async () => {
   try {
@@ -184,30 +200,12 @@ export const getSolPriceInUSD = async () => {
   }
 };
 
-// export const getBondingCurve = async (mint: string): Promise<any> => {
-//   try {
-//     console.log("------ get bondingcurve -------")
-//     console.log(mint)
-
-//     const response = await axios.post(`${BACKEND_URL}/coin/bongdingCurve`, { mint }, config);
-
-//     return response.data;
-//   } catch (err) {
-//     console.error("Error in getCoinInfo:", err);
-//     return { error: "Error setting up the request" };
-//   }
-// }
-
 export const uploadImage = async (url: string) => {
   const res = await fetch(url);
-  console.log(res.blob);
   const blob = await res.blob();
 
   const imageFile = new File([blob], "image.png", { type: "image/png" });
-  console.log(imageFile);
   const resData = await pinFileToIPFS(imageFile);
-  console.log("imageFile ==>", imageFile)
-  console.log(resData, "RESDATA>>>>");
   if (resData) {
     return `https://gateway.pinata.cloud/ipfs/${resData.IpfsHash}`;
   } else {
@@ -215,7 +213,6 @@ export const uploadImage = async (url: string) => {
   }
 };
 
-const JWT = process.env.NEXT_PUBLIC_PINATA_PRIVATE_KEY;
 
 export const pinFileToIPFS = async (blob: File) => {
   try {
@@ -234,3 +231,38 @@ export const pinFileToIPFS = async (blob: File) => {
     console.log(error);
   }
 };
+
+export const getTokenPriceAndChange = async (tokenMint: string) => {
+  try {
+    const options = {
+      method: 'GET',
+      headers: {
+        'X-API-KEY': process.env.NEXT_PUBLIC_BIRDEYE_KEY!
+      }
+    };
+    await sleep(70)
+    // Fetch the token price
+    const response = await fetch(`https://public-api.birdeye.so/defi/price?address=${tokenMint}`, options);
+    // Check if the response is ok
+    if (!response.ok) {
+      console.error("Error fetching token price: ", response.statusText);
+      return 0; // Return 0 if the fetch fails
+    }
+    const data = await response.json();
+    console.log("birdeye data ===> ", data.data)
+    // Check for the expected structure and return the price
+    if (data && data.data && typeof data.data.value === 'number') {
+      return { price: data.data.value, changeIn24h: data.data.priceChange24h, liquidity: data.data.liquidity }; // Return the price as a number
+    } else {
+      console.error("Unexpected response structure:", data);
+      return { price: 1, changeIn24h: 0, liquidity: 10000 }; // Return 0 if the structure is not as expected
+    }
+  } catch (error) {
+    console.error("Error fetching token price:", error);
+    return { price: 1, changeIn24h: 0, liquidity: 10000 }; // Return 0 on any other error
+  }
+}
+
+export function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

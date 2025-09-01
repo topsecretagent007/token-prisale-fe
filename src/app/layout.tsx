@@ -4,15 +4,15 @@ import "./globals.css";
 import Providers from "@/provider/providers";
 import "dotenv/config.js";
 import Header from "@/components/header/Header";
-// import Footer from "@/components/footer/Footer";
+import Footer from "@/components/footer/Footer";
 
 const inter = Inter({
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "WildGo",
-  description: "WildGo Pump.fun.",
+  title: "WildZOO",
+  description: "Play, Earn, and Evolve in the Wildest Web3 Zoo",
 };
 
 export default function RootLayout({
@@ -26,7 +26,7 @@ export default function RootLayout({
         <Providers>
           <Header></Header>
           {children}
-          {/* <Footer></Footer> */}
+          <Footer></Footer>
         </Providers>
       </body>
     </html>

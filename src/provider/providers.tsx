@@ -8,7 +8,6 @@ import { ModalProvider } from "@/contexts/ModalProvider";
 import UserContext from "@/context/UserContext";
 import { msgInfo, userInfo } from "@/utils/types";
 import "dotenv/config.js";
-import LoginContext from "@/context/CoinContex";
 import { useWallet } from "@solana/wallet-adapter-react";
 import SocketProvider from "@/contexts/SocketContext";
 
@@ -19,6 +18,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<userInfo>({} as userInfo);
   const [login, setLogin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [swapLoading, setSwapLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState('/*.png');
   const [isCreated, setIsCreated] = useState(false);
   const [messages, setMessages] = useState<msgInfo[]>([]);
@@ -28,6 +28,7 @@ export default function Providers({ children }: { children: ReactNode }) {
   const [profileEditModal, setProfileEditModal] = useState<boolean>(false);
   const [postReplyModal, setPostReplyModal] = useState<boolean>(false);
   const [updateCoin, setUpdateCoin] = useState<boolean>(false);
+  const [buyWowGoModalState, setBuyWowGoModalState] = useState<boolean>(false);
 
   return (
     <SolanaWalletProvider>
@@ -54,12 +55,16 @@ export default function Providers({ children }: { children: ReactNode }) {
                 setLogin,
                 isLoading,
                 setIsLoading,
+                swapLoading,
+                setSwapLoading,
                 profileEditModal,
                 setProfileEditModal,
                 postReplyModal,
                 setPostReplyModal,
                 updateCoin,
-                setUpdateCoin
+                setUpdateCoin,
+                buyWowGoModalState,
+                setBuyWowGoModalState
               }}
             >
               <SocketProvider>

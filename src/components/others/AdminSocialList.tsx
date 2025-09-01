@@ -1,13 +1,14 @@
 "use client"
+
 import React from 'react'
 import { AdminSocialData } from '@/config/TextData'
 
 export default function AdminSocialList() {
   return (
-    <div className='flex flex-row gap-2 items-center text-[#fdd52f]'>
+    <div className='flex flex-row items-center gap-4 w-[210px] text-[#9CA3AF]'>
       {AdminSocialData.map((item: any, index: number) => {
         return (
-          <a href={`${item.url}`} key={index} className='flex flex-col border-[1px] border-[#fdd52f]/10 hover:border-[#fdd52f]/40 bg-[#fdd52f]/5 hover:bg-[#fdd52f]/30 rounded-full text-xl p-2'>
+          <a href={`${item.url}`} key={index} className='flex flex-col rounded-full text-xl hover:text-white duration-300'>
             {item.icon}
           </a>
         )

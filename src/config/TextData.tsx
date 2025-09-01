@@ -1,7 +1,10 @@
-import { FaTelegramPlane, FaTwitter, FaYoutube } from "react-icons/fa";
-import { TbBrandGithubFilled } from "react-icons/tb";
+import { FaTelegramPlane, FaTwitter, FaDiscord } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 
-import { TbWorld } from "react-icons/tb";
+export const PresaleTarget = process.env.NEXT_PUBLIC_PRESALE_TARGET!
+export const Decimal = process.env.NEXT_PUBLIC_TEST_DECIMALS
+export const SlippageAmount = process.env.NEXT_PUBLIC_SLIPPAGE
+export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export const ProfileMenuList = [
     // { id: 1, text: "Coins hold", },
@@ -48,9 +51,28 @@ export const FinalTokenPoolData = [
 ]
 
 export const AdminSocialData = [
-    { id: "telegram", icon: <FaTelegramPlane />, url: "https://t.me/@topsecretagent_007/" },
-    { id: "youtube", icon: <FaYoutube />, url: "https://www.youtube.com/channel/UCzvCp5H48sXZDxZ1cAdlcUA" },
-    { id: "twitter", icon: <FaTwitter />, url: "https://x.com/topsecretagent_007/" },
-    { id: "github", icon: <TbBrandGithubFilled />, url: "https://github.com/topsecretagent007/" },
-    { id: "domain", icon: <TbWorld />, url: "https://www.tsagent.online/" },
+    { id: "twitter", name: "@lendon1114", icon: <FaXTwitter />, url: "https://x.com/lendon1114/" },
+    { id: "telegram", name: "Topsecretagent_007", icon: <FaTelegramPlane />, url: "https://t.me/@topsecretagent_007/" },
+]
+
+export const FooterWildZoo = [
+    { id: "fees", name: "Fees" },
+    { id: "partnership", name: "Partnership Programs" },
+    { id: "terms", name: "Terms of Service" },
+    { id: "privacy", name: "Privacy Policies" },
+    { id: "faq", name: "FAQ" },
+]
+
+export const FooterWowGo = [
+    { id: "roadmap", name: "Roadmap" },
+    { id: "tokenomics", name: "Tokenomics" },
+    { id: "howtobuy", name: "How to buy" },
+    { id: "lightpaper", name: "Lightpaper" },
+]
+
+export const FooterWildGo = [
+    { id: "wowgotoken", name: "WOWGO Token" },
+    { id: "wildgoclicker", name: "WILDGO Clicker" },
+    { id: "wildgoplayfi", name: "WILDGO PlayFi" },
+    { id: "wildzoo", name: "WILDZOO" },
 ]

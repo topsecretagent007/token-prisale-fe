@@ -1,8 +1,11 @@
-import { recordInfo } from "@/utils/types";
+'use client'
+
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { recordInfo } from "@/utils/types";
 import UserImg from "@/../public/assets/images/user-avatar.png"
+import { Decimal } from "@/config/TextData";
 
 interface TradePropsInfo {
   trade: recordInfo;
@@ -57,8 +60,8 @@ export const Trade: React.FC<TradePropsInfo> = ({ trade, lastData }) => {
         <div className="text-lg">{trade.holder?.name}</div>
       </td>
       <td className={`${trade.swapDirection === 0 ? "text-green-600" : "text-red-600"} text-center py-2 border-r-[1px] border-r-[#fdd52f]`}>{trade.swapDirection == 0 ? "Buy" : "Sell"}</td>
-      <td className={`${trade.swapDirection === 0 ? "text-red-600" : "text-green-600"} text-center py-2 border-r-[1px] border-r-[#fdd52f]`}>{trade.swapDirection == 0 ? `-${(trade?.amountIn / 10 ** 9)}` : `+ ${(trade?.amountOut / 10 ** 9)}`}</td>
-      <td className={`${trade.swapDirection === 0 ? "text-green-600" : "text-red-600"} text-center py-2 border-r-[1px] border-r-[#fdd52f]`}>{trade.swapDirection == 0 ? `+${(trade?.amountOut / 10 ** 6)}` : `-${(trade?.amountIn / 10 ** 6)}`}</td >
+      <td className={`${trade.swapDirection === 0 ? "text-red-600" : "text-green-600"} text-center py-2 border-r-[1px] border-r-[#fdd52f]`}>{trade.swapDirection == 0 ? `-${(trade?.amountIn / 10 ** Number(Decimal))}` : `+ ${(trade?.amountOut / 10 ** Number(Decimal))}`}</td>
+      <td className={`${trade.swapDirection === 0 ? "text-green-600" : "text-red-600"} text-center py-2 border-r-[1px] border-r-[#fdd52f]`}>{trade.swapDirection == 0 ? `+${(trade?.amountOut / 10 ** Number(Decimal))}` : `-${(trade?.amountIn / 10 ** Number(Decimal))}`}</td >
       <td className="text-center py-2 border-r-[1px] border-r-[#fdd52f]">{timeAgo}</td>
       <td className="text-center py-2">
         <p

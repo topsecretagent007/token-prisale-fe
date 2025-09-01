@@ -10,6 +10,7 @@ import ReactLoading from "react-loading";
 import { twMerge } from "tailwind-merge";
 import { flare } from "viem/chains";
 import UserContext from "@/context/UserContext";
+import { useSocket } from "@/contexts/SocketContext";
 
 
 export type TVChartContainerProps = {
@@ -28,20 +29,20 @@ export const TVChartContainer = ({
     token,
     customPeriodParams
 }: TVChartContainerProps) => {
-    const chartContainerRef =
-        useRef<HTMLDivElement>() as React.MutableRefObject<HTMLInputElement>;
+    const chartContainerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLInputElement>;
     const tvWidgetRef = useRef<IChartingLibraryWidget | null>(null);
-    const {isLoading, setIsLoading} = useContext(UserContext);
+    const { isLoading, setIsLoading } = useContext(UserContext);
+    const { newSwapTradingSocket } = useSocket()
 
     useEffect(() => {
-        if (!chartContainerRef.current) {
-            return () => { };
-        }
+        if (!chartContainerRef.current) return () => { };
+
         if (tvWidgetRef.current) {
             tvWidgetRef.current.remove();
         }
+
         const elem = chartContainerRef.current;
-        if(name){
+        if (name) {
             const widgetOptions: ChartingLibraryWidgetOptions = {
                 symbol: name,
                 debug: false,
@@ -51,8 +52,8 @@ export const TVChartContainer = ({
                 container: elem,
                 library_path: `${location.protocol}//${location.host}/libraries/charting_library/`,
                 loading_screen: {
-                    backgroundColor: "#111114",
-                    foregroundColor: "#111114",
+                    backgroundColor: "#FFFFFC",
+                    foregroundColor: "#FFFFFC",
                 },
                 enabled_features: enabledFeatures,
                 disabled_features: disabledFeatures,
@@ -61,43 +62,35 @@ export const TVChartContainer = ({
                 fullscreen: false,
                 autosize: true,
                 custom_css_url: "/tradingview-chart.css",
-                overrides: chartOverrides,
+                overrides: {
+                    ...chartOverrides,
+                    "priceScale.align": "right",  // Align price scale to the right
+                    // More custom overrides as needed
+                },
                 interval: "1D" as ResolutionString,
-    
             };
-    
+
             tvWidgetRef.current = new widget(widgetOptions);
             tvWidgetRef.current.onChartReady(function () {
                 setIsLoading(false);
-                // const priceScale = tvWidgetRef.current?.activeChart().getPanes()[0].getMainSourcePriceScale();
-                // priceScale?.setAutoScale(true)
             });
-            
+
             return () => {
                 if (tvWidgetRef.current) {
                     tvWidgetRef.current.remove();
                 }
             };
-
         }
-    }, [name, pairIndex]);
+    }, [name, pairIndex, newSwapTradingSocket]);
 
     return (
-        <div className="relative mb-[1px] h-[500px] w-full ">
-            { isLoading ? (
-                <div className="z-9999 absolute left-0 top-0 flex h-full w-full items-center justify-center bg-tizz-background">
-                    <ReactLoading
-                        height={20}
-                        width={50}
-                        type={"bars"}
-                        color={"#36d7b7"}
-                    />
+        <div className="relative bg-[#131722] shadow-sm mb-[1px] p-3 rounded-[24px] w-full h-[421px]">
+            {isLoading ? (
+                <div className="top-0 left-0 z-9999 absolute flex justify-center items-center bg-tizz-background w-full h-full">
+                    <ReactLoading height={20} width={50} type={"bars"} color={"#131722 F"} />
                 </div>
             ) : null}
-            <div
-                ref={chartContainerRef}
-                className={twMerge("h-full w-full")}
-            />
+            <div ref={chartContainerRef} className={twMerge("rounded-[24px] w-full h-full")} />
         </div>
     );
 };

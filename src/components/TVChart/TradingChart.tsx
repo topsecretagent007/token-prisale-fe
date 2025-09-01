@@ -25,7 +25,6 @@ const TVChartContainer = dynamic(
 );
 
 export const TradingChart: React.FC<TradingChartProps> = ({ param }) => {
-    const { newTx } = useSocket()
 
     const [isScriptReady, setIsScriptReady] = useState(false);
     const [period, setPeriod] = useState<PeriodParams>({} as PeriodParams)
@@ -35,7 +34,6 @@ export const TradingChart: React.FC<TradingChartProps> = ({ param }) => {
             const newPeriod: PeriodParams = {
                 from: Math.floor(new Date(param.date).getTime() / 1000),
                 to: Math.floor(new Date().getTime() / 1000),
-                // to: new Date().getTime(),
                 firstDataRequest: true,
                 countBack: 2
             }
@@ -49,10 +47,6 @@ export const TradingChart: React.FC<TradingChartProps> = ({ param }) => {
             <Head>
                 <title>Sample Demo TradingView with NextJS</title>
             </Head>
-            {/* <Script
-        src="/libraries/charting_library/charting_library.standalone.js"
-        strategy="lazyOnload"
-      /> */}
             <Script
                 src="/libraries/datafeeds/udf/dist/bundle.js"
                 strategy="lazyOnload"

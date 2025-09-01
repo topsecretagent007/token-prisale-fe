@@ -1,7 +1,7 @@
 "use client";
 
 import { ChartTable } from "./types";
-import { BACKEND_URL } from "./util";
+import { BACKEND_URL } from "@/config/TextData";
 
 export async function getChartTable({
     pairIndex,

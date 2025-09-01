@@ -1,5 +1,8 @@
-"use client"
+"use client";
+
 import React, { ChangeEvent, useRef, useState } from "react";
+import { BsImage } from "react-icons/bs";
+import { IoMdClose } from "react-icons/io";
 
 interface ImageUploadProps {
   header: string;
@@ -8,27 +11,46 @@ interface ImageUploadProps {
   setFileUrl: (fileUrl: string) => void;
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ header, setFilePreview, setFileUrl, type }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({
+  header,
+  setFilePreview,
+  setFileUrl,
+  type,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFileName, setSelectedFileName] = useState<string>("No file selected");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFileName(file.name);
-      setFilePreview(URL.createObjectURL(file)); // Pass the file name or URL to the parent
-      setFileUrl(URL.createObjectURL(file))
+      const fileUrl = URL.createObjectURL(file);
+      setImagePreviewUrl(fileUrl); // Set the preview URL
+      setFilePreview(fileUrl); // Pass the file URL to the parent
+      setFileUrl(fileUrl); // Pass the file URL to the parent
     } else {
       setSelectedFileName("No file selected");
+      setImagePreviewUrl(null);
       setFilePreview(null);
-      setFileUrl(null)
+      setFileUrl(null);
+    }
+  };
+
+  const handleClearImage = () => {
+    setSelectedFileName("No file selected");
+    setImagePreviewUrl(null);
+    setFilePreview(null);
+    setFileUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // Reset the file input
     }
   };
 
   return (
-    <div className="w-full flex flex-col justify-between gap-6">
-      <div className="w-full justify-between flex flex-col items-start gap-2 ">
-        <label className="text-lg font-semibold text-[#fdd52f] flex flex-row gap-1">{header} <p className="text-red-600">*</p></label>
+    <div className="flex flex-col justify-between gap-6 w-full">
+      <div className="flex flex-col justify-between items-start gap-2 w-full">
+        <label className="flex flex-row gap-1 font-semibold text-[#090603] text-xs">{header}</label>
         <input
           type="file"
           accept={type}
@@ -36,16 +58,37 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ header, setFilePreview, setFi
           className="hidden"
           onChange={handleFileChange}
         />
-        <div className="w-full h-full flex flex-row justify-between gap-4 items-center">
-          <div className="w-full py-2 px-3 bg-transparent rounded-lg min-h-10 text-white/70 border-[#fdd52f] border-[1px]">
-            {selectedFileName}
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          className="flex flex-col justify-between items-center gap-2 p-3 border-[#E5E7EB] border-[1px] rounded-[8px] w-[200px] h-[200px] cursor-pointer"
+        >
+          {imagePreviewUrl && (
+            <div className="flex flex-row justify-center items-center gap-2 w-full">
+              <BsImage className="text-[#090603] text-xl" />
+              <div className="bg-transparent w-full max-w-[135px] h-[18px] object-cover overflow-hidden text-[#090603] text-sm text-start break-words">
+                {selectedFileName}
+              </div>
+              <IoMdClose
+                className="text-[#C81928] text-xl cursor-pointer"
+                onClick={handleClearImage}
+              />
+            </div>
+          )}
+          <div className="flex flex-col justify-center items-center w-[176px] h-[150px]">
+            {imagePreviewUrl ? (
+              <img
+                src={imagePreviewUrl}
+                alt="Preview"
+                className="rounded-md w-full h-full object-contain"
+              />
+            ) : (
+              <div className="flex flex-col justify-center items-center w-full h-full">
+                <BsImage className="text-[#9CA3AF] text-xl" />
+                <span className="text-[#9CA3AF] text-sm">Insert an Image</span>
+                <span className="text-[#9CA3AF] text-xs">or drag and drop it here</span>
+              </div>
+            )}
           </div>
-          <button
-            className="py-2 px-4 text-[#fdd52f] rounded-lg border-[#fdd52f] border-[1px] font-bold bg-[#fdd52f]/5 hover:bg-[#fdd52f]/30"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Browse...
-          </button>
         </div>
       </div>
     </div>

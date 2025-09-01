@@ -1,22 +1,25 @@
 "use client"
-import { FC, useContext, useEffect, useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import UserContext from "@/context/UserContext";
-import { FaXTwitter } from "react-icons/fa6";
-import { TbWorld } from "react-icons/tb";
-import { FaTelegramPlane } from "react-icons/fa";
-import { MdLibraryAdd } from "react-icons/md";
-import { coinInfo } from "@/utils/types";
-import KingImg from "@/../public/assets/images/logo.png"
-import Logo from "@/../public/assets/images/logo.png"
 
+import { FC, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useWallet } from "@solana/wallet-adapter-react";
+import UserContext from "@/context/UserContext";
+import { coinInfo, userInfo } from "@/utils/types";
+import KingImg from "@/../public/assets/images/logo.png"
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import KingsIcon from "@/../public/assets/images/king.png";
+import PresaleIcon from "@/../public/assets/images/presale.png"
+import UserAvatar from "@/../public/assets/images/user-avatar.png";
+import { Decimal } from "@/config/TextData";
 
 const TopToken: FC<{ data: coinInfo[] }> = ({ data }) => {
-  const { setIsLoading, solPrice } = useContext(UserContext);
+  const { setIsLoading } = useContext(UserContext);
   const [daysAgo, setDaysAgo] = useState<string>("0d ago");
   const [topTokenData, setTopTokenData] = useState<coinInfo>({} as coinInfo);
   const router = useRouter();
+  const { setVisible } = useWalletModal();
+  const { publicKey } = useWallet();
 
   const limiteSolAmount: string | undefined = process.env.NEXT_PUBLIC_LIMITE_SOLAMOUNT;
 
@@ -55,7 +58,7 @@ const TopToken: FC<{ data: coinInfo[] }> = ({ data }) => {
   const getTopToken = (data: coinInfo[]) => {
     let sortedData = [...data]; // Create a new array to prevent direct state mutation
 
-    sortedData.sort((a, b) => b.progressMcap - a.progressMcap);
+    sortedData.sort((a, b) => b.marketcap - a.marketcap);
 
     console.log("sortedData ==> ", sortedData[0])
     setTopTokenData(sortedData[0])
@@ -70,60 +73,121 @@ const TopToken: FC<{ data: coinInfo[] }> = ({ data }) => {
   }, [data])
 
   return (
-    <div className="w-full h-full px-2">
-      <div className="w-full justify-between flex flex-col items-start gap-6">
-        <div className="w-full h-full flex flex-row justify-between items-center text-[#fdd52f] px-4">
-          <div className="flex flex-row items-center text-3xl font-extrabold text-[#fdd52f] gap-3">
-            Pump It!
+    <div className="px-2 w-full h-full">
+      <div className="flex flex-row justify-center items-end gap-10 w-full h-full">
+        <div className="flex flex-col justify-center items-start gap-4 px-4 w-full max-w-[410px] text-[#fdd52f]">
+          <div className="flex flex-row items-center font-extrabold text-[#090603] text-xl">
+            Play, Earn, and Evolve in the Wildest Web3 Zoo
           </div>
-          <div onClick={() => handleToRouter('/create-coin')} className="flex flex-row gap-1 items-center px-12 py-2.5 border-[1px] border-[#fdd52f] hover:bg-[#fdd52f]/30 rounded-full cursor-pointer mx-auto xs:mx-0">
-            <MdLibraryAdd className="text-2xl" />
-            Create a Token
+          <p className="text-[#4B5563] text-sm">
+            Raise virtual pets, unlock rare species, and earn rewards through gameplay. <br />
+            Join a new frontier where fun meets the blockchain.
+          </p>
+          <div className="flex flex-row items-center gap-2">
+            {!publicKey ?
+              <div onClick={() => setVisible(true)} className="group relative flex flex-row justify-end items-center gap-1 bg-gradient-to-b from-[#86B3FD] to-[#2B35E1] px-4 py-2 border-[#86B3FD] border-[3px] rounded-[12px] font-semibold text-white cursor-pointer">
+                Connect Wallet
+              </div>
+              :
+              <div onClick={() => handleToRouter('/create-coin')} className="flex flex-row items-center gap-1 bg-[#FFFFFC] px-5 py-2.5 rounded-[12px] font-semibold text-[#2B35E1] cursor-pointer shadow-md">
+                Create a Token
+              </div>
+            }
           </div>
         </div>
         <div
-          onClick={() => handleToRouter(`/trading/${topTokenData._id}`)}
-          className="w-full max-w-[720px] flex flex-col xs:flex-row gap-2 items-start justify-center mx-auto border-[#fdd52f] border-[1px] rounded-xl shadow-[0px_8px_8px_0px] shadow-[#fdd52f]/50 object-cover overflow-hidden pr-2 cursor-pointer"
-        // style={{ backgroundImage: "url(/assets/images/toptokenbg.png)", backgroundSize: "22%", backgroundPosition: "right bottom", backgroundRepeat: "no-repeat" }}
+          onClick={() => {
+            if (topTokenData.status === 0 || topTokenData.status === 1 || topTokenData.status === 2) {
+              handleToRouter(`/presaletrade/${topTokenData.token}`);
+            } else if (topTokenData.status === 3 || topTokenData.status === 5) {
+              handleToRouter(`/trading/${topTokenData.token}`);
+            }
+          }}
+          className="flex xs:flex-row flex-col justify-center items-start gap-2 bg-[#FFFFFC] p-6 rounded-[12px] w-full max-w-[624px] h-full object-cover overflow-hidden cursor-pointer"
         >
-          <div className="w-full max-w-[300px] h-[160px] xs:h-[300px] flex flex-col justify-center items-center ">
+          <div className="flex flex-col justify-center items-center w-full max-w-[280px] h-[160px] xs:h-[280px]">
             <Image
               src={topTokenData?.url ? topTokenData.url : KingImg}
               alt="TestTokenImg"
-              width={300} // Set a width
-              height={300} // Set a height
-              className="flex flex-col w-[160px] max-h-[160px] xs:w-[300px] xs:max-h-[300px] object-cover overflow-hidden rounded-lg" />
+              width={280}
+              height={280}
+              className="flex flex-col rounded-lg w-[160px] xs:w-[280px] max-h-[160px] xs:max-h-[280px] object-cover overflow-hidden" />
           </div>
-          <div className="w-full max-w-[420px] flex flex-col gap-2 justify-between items-start text-[#fdd52f] py-2 px-1 object-cover overflow-hidden">
-            <p className="text-2xl font-bold">Name : {topTokenData.name ? topTokenData.name : "WildGo"}</p>
-            <div className="text-xl font-semibold h-24">Description : <br /> <p className="flex flex-col w-full h-16 px-2 text-base object-cover overflow-hidden break-words text-[#b2af93]">{topTokenData.description ? topTokenData.description : "WildGo Pump"}</p></div>
-            <div className="text-xl font-semibold">Contract : <p className="px-2 text-base flex w-full max-w-[400px] text-[#b2af93]">{topTokenData.token ? topTokenData.token : "token contract address"}</p></div>
-            <div className="w-full flex flex-row gap-1 justify-end items-center text-white text-xl h-6">
-              {(topTokenData?.twitter && topTokenData?.twitter !== undefined) && <FaXTwitter />}
-              {(topTokenData?.telegram && topTokenData?.telegram !== undefined) && <FaTelegramPlane />}
-              {(topTokenData?.website && topTokenData?.website !== undefined) && <TbWorld />}
+          <div className="flex flex-col justify-between items-start px-1 w-full max-w-[272px] h-[160px] xs:h-[280px] object-cover overflow-hidden">
+            <div className="flex flex-col gap-2 w-full h-full">
+              <div className="flex flex-row justify-between items-start w-full">
+                <p className="font-bold text-[#090603] text-lg">Name : {topTokenData.name ? topTokenData.name : "WildGo"}</p>
+                {topTokenData?.status === 5 && (
+                  <Image src={KingsIcon} alt="KingsIcon" width={20} height={20} className="w-5 h-5" />
+                )}
+                {(topTokenData.status === 0 || topTokenData.status === 1 || topTokenData.status === 2) && (
+                  <Image src={PresaleIcon} alt="PresaleIcon" width={20} height={20} className="w-5 h-5" />
+                )}
+              </div>
+
+              <div className="flex flex-row justify-start items-center gap-2 w-full h-6 text-[#b2af93] text-lg">
+                <p className="font- text-[#4B5563] text-sm">By</p>
+                <Image src={UserAvatar} alt="UserAvatar" width={20} height={20} className="rounded-full w-5 h-5" />
+                <p className="font- text-[#090603] text-sm">{(topTokenData?.creator as userInfo)?.name ? (topTokenData?.creator as userInfo)?.name : "AWd...Qx3A"}</p>
+              </div>
+              <div className="h-24 font-semibold text-xl">Description : <br /> <p className="flex flex-col px-2 w-full h-full object-cover overflow-hidden text-[#4B5563] text-sm break-words">{topTokenData.description ? topTokenData.description : "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent dapibus non leo sit amet porttitor. Aliquam varius, ipsum et eleifend elementum, lacus turpis cursus ipsum, non egestas urna erat id tortor."}</p></div>
             </div>
-            <div className="w-full flex flex-col gap-1">
-              <div className="w-full flex flex-row items-center justify-between">
-                <div className="flex flex-row gap-1 items-center text-lg font-semibold">
-                  MCAP :
-                  <div className="text-[#b2af93] font-bold">
-                    {(topTokenData?.progressMcap !== null || topTokenData?.progressMcap !== undefined)
-                      ? topTokenData.progressMcap > 1000
-                        ? '$' + (Math.ceil(topTokenData.progressMcap) / 1000 * solPrice).toFixed(2) + 'k'
-                        : '$' + (topTokenData?.progressMcap * solPrice).toFixed(2)
-                      : 'N/A'}
-                  </div>
+
+            <div className="flex flex-col gap-1 w-full">
+              <div className="flex flex-row justify-between items-end w-full">
+                <div className="flex flex-row items-center gap-2 font-semibold">
+                  <p className="text-[#4B5563] text-[10px] text-end">
+                    Market <br />
+                    Cap
+                  </p>
+                  {(topTokenData?.status === 0 || topTokenData?.status === 1 || topTokenData?.status === 2) &&
+                    <div className="flex flex-col justify-center items-center bg-[linear-gradient(180deg,_#FFF8E8_0%,_#FCD582_100%)] px-2 py-0.5 rounded-full font-bold text-[#090603] text-base">
+                      {
+                        (topTokenData?.progressPresale !== null || topTokenData?.progressPresale !== undefined)
+                          ? (() => {
+                            const value = topTokenData?.progressPresale / (10 ** Number(Decimal));
+
+                            if (value >= 1_000_000_000) {
+                              return '$' + (value / 1_000_000_000).toFixed(2) + 'B'; // Billions
+                            } else if (value >= 1_000_000) {
+                              return '$' + (value / 1_000_000).toFixed(2) + 'M'; // Millions
+                            } else if (value >= 1_000) {
+                              return '$' + (value / 1_000).toFixed(2) + 'k'; // Thousands
+                            } else {
+                              return '$' + value.toFixed(2); // Less than 1000
+                            }
+                          })()
+                          : "0.00"
+                      }
+                    </div>
+                  }
+
+                  {(topTokenData?.status === 3 || topTokenData?.status === 5) &&
+                    <div className="flex flex-col justify-center items-center bg-[linear-gradient(180deg,_#FFF8E8_0%,_#FCD582_100%)] px-2 py-0.5 rounded-full font-bold text-[#090603] text-base">
+                      {
+                        (topTokenData?.marketcap !== null || topTokenData?.marketcap !== undefined)
+                          ? (() => {
+                            const value = topTokenData?.marketcap / (10 ** Number(Decimal));
+
+                            if (value >= 1_000_000_000) {
+                              return '$' + (value / 1_000_000_000).toFixed(2) + 'B'; // Billions
+                            } else if (value >= 1_000_000) {
+                              return '$' + (value / 1_000_000).toFixed(2) + 'M'; // Millions
+                            } else if (value >= 1_000) {
+                              return '$' + (value / 1_000).toFixed(2) + 'k'; // Thousands
+                            } else {
+                              return '$' + value.toFixed(2); // Less than 1000
+                            }
+                          })()
+                          : "0.00"
+                      }
+                    </div>
+                  }
                 </div>
-                <div className="text-[#b2af93] font-bold">
+
+                <div className="bg-[#EEF4FF] px-2 py-0.5 rounded-full font-bold text-[#090603] text-[12px]">
                   {daysAgo}
                 </div>
-              </div>
-              <div className="w-full h-2 rounded-full bg-[#ff1cff] relative flex object-cover overflow-hidden">
-                <div
-                  className="justify-start h-2 absolute top-0 left-0 bg-[#fdd52f]"
-                  style={{ width: `${topTokenData?.progressMcap / Number(limiteSolAmount) * 100}%` }}  // Fix: Corrected percentage calculation
-                />
               </div>
             </div>
           </div>

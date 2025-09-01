@@ -1,12 +1,8 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client"
 import { createContext, useState, useEffect, useContext } from "react";
 import io, { Socket } from "socket.io-client";
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useRouter } from "next/navigation";
-import { errorAlert, successAlert } from "@/components/others/ToastGroup";
-import { coinInfo, msgInfo, tradeInfo } from "@/utils/types";
-import UserContext from "@/context/UserContext";
+import { coinInfo } from "@/utils/types";
 
 interface Context {
   socket?: Socket;
@@ -28,21 +24,164 @@ interface Context {
   setAlertState?: Function;
   newToken: any[];
   setNewToken: Function;
-  newTx: any[];
-  setNewTx: Function;
+  newPresaleBuyTx: coinInfo;
+  setNewPresaleBuyTx: Function;
+  presaleCompleteSocket: coinInfo;
+  setPresaleCompleteSocket: Function;
+  distributeSocket: coinInfo;
+  setDistributeSocket: Function;
+  refundSocket: coinInfo;
+  setRefundSocket: Function;
+  distributeCompleteSocket: coinInfo;
+  setDistributeCompleteSocket: Function;
+  refundCompleteSocket: coinInfo;
+  setRefundCompleteSocket: Function;
+  distributeStartSocket: coinInfo;
+  setDistributeStartSocket: Function;
+  refundStartSocket: coinInfo;
+  setRefundStartSocket: Function;
+  newSwapTradingSocket: string;
+  setNewSwapTradingSocket: Function;
 }
 
 const context = createContext<Context>({
   newToken: [],
   setNewToken: undefined,
-  newTx: [],
-  setNewTx: undefined
+  newPresaleBuyTx: {
+    quoteReserves: 0,
+    tokenReserves: 0,
+    commit: undefined,
+    name: "",
+    creator: "",
+    ticker: "",
+    url: "",
+    reserveOne: 0,
+    reserveTwo: 0,
+    token: "",
+    bondingCurve: false,
+    status: 0,
+    progressPresale: 0
+  },
+  setNewPresaleBuyTx: undefined,
+  presaleCompleteSocket: {
+    quoteReserves: 0,
+    tokenReserves: 0,
+    commit: undefined,
+    name: "",
+    creator: "",
+    ticker: "",
+    url: "",
+    reserveOne: 0,
+    reserveTwo: 0,
+    token: "",
+    bondingCurve: false,
+    status: 0,
+    progressPresale: 0
+  },
+  setPresaleCompleteSocket: undefined,
+  distributeSocket: {
+    quoteReserves: 0,
+    tokenReserves: 0,
+    commit: undefined,
+    name: "",
+    creator: "",
+    ticker: "",
+    url: "",
+    reserveOne: 0,
+    reserveTwo: 0,
+    token: "",
+    bondingCurve: false,
+    status: 0,
+    progressPresale: 0
+  },
+  setDistributeSocket: undefined,
+  refundSocket: {
+    quoteReserves: 0,
+    tokenReserves: 0,
+    commit: undefined,
+    name: "",
+    creator: "",
+    ticker: "",
+    url: "",
+    reserveOne: 0,
+    reserveTwo: 0,
+    token: "",
+    bondingCurve: false,
+    status: 0,
+    progressPresale: 0
+  },
+  setRefundSocket: undefined,
+  distributeCompleteSocket: {
+    quoteReserves: 0,
+    tokenReserves: 0,
+    commit: undefined,
+    name: "",
+    creator: "",
+    ticker: "",
+    url: "",
+    reserveOne: 0,
+    reserveTwo: 0,
+    token: "",
+    bondingCurve: false,
+    status: 0,
+    progressPresale: 0
+  },
+  setDistributeCompleteSocket: undefined,
+  refundCompleteSocket: {
+    quoteReserves: 0,
+    tokenReserves: 0,
+    commit: undefined,
+    name: "",
+    creator: "",
+    ticker: "",
+    url: "",
+    reserveOne: 0,
+    reserveTwo: 0,
+    token: "",
+    bondingCurve: false,
+    status: 0,
+    progressPresale: 0
+  },
+  setRefundCompleteSocket: undefined,
+  distributeStartSocket: {
+    quoteReserves: 0,
+    tokenReserves: 0,
+    commit: undefined,
+    name: "",
+    creator: "",
+    ticker: "",
+    url: "",
+    reserveOne: 0,
+    reserveTwo: 0,
+    token: "",
+    bondingCurve: false,
+    status: 0,
+    progressPresale: 0
+  },
+  setDistributeStartSocket: undefined,
+  refundStartSocket: {
+    quoteReserves: 0,
+    tokenReserves: 0,
+    commit: undefined,
+    name: "",
+    creator: "",
+    ticker: "",
+    url: "",
+    reserveOne: 0,
+    reserveTwo: 0,
+    token: "",
+    bondingCurve: false,
+    status: 0,
+    progressPresale: 0
+  },
+  setRefundStartSocket: undefined,
+  newSwapTradingSocket: "",
+  setNewSwapTradingSocket: undefined,
 });
 
 export const useSocket = () => useContext(context);
 
 const SocketProvider = (props: { children: any }) => {
-  const { setCoinId, setNewMsg } = useContext(UserContext)
   const [socket, setSocket] = useState<Socket>();
   const [counter, setCounter] = useState<number>(1);
   const [randValue, setRandValue] = useState<number>(0);
@@ -58,70 +197,28 @@ const SocketProvider = (props: { children: any }) => {
     severity: undefined,
   })
   const [newToken, setNewToken] = useState<any[]>([]);
-  const [newTx, setNewTx] = useState<any[]>([]);
+  const [newPresaleBuyTx, setNewPresaleBuyTx] = useState<coinInfo>();
+  const [presaleCompleteSocket, setPresaleCompleteSocket] = useState<coinInfo>();
+  const [distributeSocket, setDistributeSocket] = useState<coinInfo>();
+  const [distributeStartSocket, setDistributeStartSocket] = useState<coinInfo>()
+  const [distributeCompleteSocket, setDistributeCompleteSocket] = useState<coinInfo>()
+  const [refundSocket, setRefundSocket] = useState<coinInfo>()
+  const [refundStartSocket, setRefundStartSocket] = useState<coinInfo>()
+  const [refundCompleteSocket, setRefundCompleteSocket] = useState<coinInfo>()
+  const [newSwapTradingSocket, setNewSwapTradingSocket] = useState<string>("")
 
   const router = useRouter();
-  // const router = useRouter();
-  // wallet Info
-  const wallet = useWallet();
-  const { connection } = useConnection();
-
-  const connectionUpdatedHandler = (data: number) => {
-    setCounter(data);
-  };
-
-  const createSuccessHandler = (name: string) => {
-    console.log("Successfully Create Token Name:", name)
-    setAlertState({
-      open: true,
-      message: 'Success',
-      severity: 'success',
-    });
-    successAlert(`Successfully Created token: ${name}`);
-    setIsLoading(false);
-  }
-
-  const createFailedHandler = (name: string, mint: string) => {
-    console.log("Failed Create Token Name:", name)
-    setAlertState({
-      open: true,
-      message: 'Failed',
-      severity: 'error',
-    });
-    errorAlert(`Failed Create token: ${name}`)
-    setIsLoading(false);
-  }
-
-  const createMessageHandler = (updateCoinId: string, updateMsg: msgInfo) => {
-    console.log("Updated Message", updateCoinId, updateMsg)
-    setCoinId(updateCoinId);
-    setNewMsg(updateMsg);
-  }
-
-  const newTransaction = (data: any, user: any) => {
-    console.log("new buy and sell ===>", data, user);
-
-    // Update the `data.holder` with the user._id
-    const updatedData = {
-      ...data,  // Spread the existing data
-      holder: user, // Change the holder to user._id
-    };
-
-    console.log("updatedData ==>", updatedData)
-
-    // Update the state with the modified data object
-    setNewTx(updatedData);
-  };
 
   // init socket client object
   useEffect(() => {
-
     const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL!, {
       transports: ["websocket"],
     });
+
     socket.on("connect", async () => {
       console.log(" --@ connected to backend", socket.id);
     });
+
     socket.on("disconnect", () => {
       console.log(" --@ disconnected from backend", socket.id);
     });
@@ -132,57 +229,69 @@ const SocketProvider = (props: { children: any }) => {
       socket.off("connect");
       socket.off("disconnect");
       setSocket(undefined);
-      // socket?.disconnect();
 
     };
   }, [router]);
 
   useEffect(() => {
-    socket?.on("connectionUpdated", async (counter: number) => {
-      // console.log("--------@ Connection Updated: ", counter);
-
-      connectionUpdatedHandler(counter)
-    });
-
-    socket?.on("Creation", () => {
-      console.log("--------@ Token Creation: ");
-
-    });
     socket?.on("TokenCreated", async (data: any) => {
-      console.log("--------@ Token Created!: ", data.name, data.mint, data.data);
-
-      createSuccessHandler(data.name);
       setCounter((prev) => prev + 1); // Increment counter
-      setNewToken(data.data);
+      setNewToken(data);
     });
 
-    socket?.on("TokenNotCreated", async (name: string, mint: string) => {
-      console.log("--------@ Token Not Created: ", name);
-
-      createFailedHandler(name, mint);
+    socket?.on("presaleBuy", async (data: any) => {
+      setNewPresaleBuyTx(data.data)
     });
 
-    socket?.on("MessageUpdated", async (updateCoinId: string, newMessage: msgInfo) => {
-      if (updateCoinId && newMessage) {
-        console.log("--------@ Message Updated:", updateCoinId, newMessage)
+    socket?.on("presaleComplete", async (data: any) => {
+      setPresaleCompleteSocket(data.data)
+    });
 
-        createMessageHandler(updateCoinId, newMessage)
-      }
-    })
+    socket?.on("distribute", async (data: any) => {
+      setDistributeSocket(data.data)
+    });
 
-    socket?.on("Swap", async (data: any) => {
-      console.log("--------@ Swap:", data.data)
-      console.log("--------@ Swap:", data.user)
+    socket?.on("distributeStart", async (data: any) => {
+      setDistributeStartSocket(data.data)
+    });
 
-      newTransaction(data.data, data.user)
-    })
+    socket?.on("refund", async (data: any) => {
+      setRefundSocket(data.data)
+    });
+
+    socket?.on("refundStart", async (data: any) => {
+      setRefundStartSocket(data.data)
+    });
+
+    socket?.on("distributeComplete", async (data: any) => {
+      setDistributeCompleteSocket(data.data)
+    });
+
+    socket?.on("refundComplete", async (data: any) => {
+      setRefundCompleteSocket(data.data)
+    });
+
+    socket?.on("swap", async (data: any) => {
+      setNewSwapTradingSocket(data.mint)
+    });
+
+    socket?.on("withdraw", async (data: any) => {
+
+      console.log("--------@ withdraw: ", data);
+    });
 
     return () => {
-      socket?.off("Creation", createSuccessHandler);
-      socket?.off("TokenCreated", createSuccessHandler);
-      socket?.off("TokenNotCreated", createFailedHandler);
-      socket?.off("MessageUpdated", createMessageHandler);
-      socket?.off("Swap", createMessageHandler);
+      socket?.off("TokenCreated");
+      socket?.off("presaleBuy");
+      socket?.off("presaleComplete");
+      socket?.off("distribute");
+      socket?.off("distributeStart");
+      socket?.off("distributeComplete");
+      socket?.off("refund");
+      socket?.off("refundStart");
+      socket?.off("refundComplete");
+      socket?.off("swap");
+      socket?.off("withdraw");
 
       socket?.disconnect();
     };
@@ -210,8 +319,24 @@ const SocketProvider = (props: { children: any }) => {
         setAlertState,
         newToken,
         setNewToken,
-        newTx,
-        setNewTx
+        newPresaleBuyTx,
+        setNewPresaleBuyTx,
+        presaleCompleteSocket,
+        setPresaleCompleteSocket,
+        distributeSocket,
+        setDistributeSocket,
+        refundSocket,
+        setRefundSocket,
+        distributeCompleteSocket,
+        setDistributeCompleteSocket,
+        refundCompleteSocket,
+        setRefundCompleteSocket,
+        distributeStartSocket,
+        setDistributeStartSocket,
+        refundStartSocket,
+        setRefundStartSocket,
+        newSwapTradingSocket,
+        setNewSwapTradingSocket,
       }}
     >
       {props.children}

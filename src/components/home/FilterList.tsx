@@ -1,4 +1,5 @@
 "use client";
+
 import { FC, useState } from "react";
 import { BiSearchAlt } from "react-icons/bi";
 import { coinInfo } from "@/utils/types";
@@ -15,7 +16,7 @@ const FilterList: FC<TokenDataProps> = ({ firstData, tokenData, setData }) => {
 
   const searchToken = (value: string) => {
     if (!value.trim()) {
-      setData(firstData); // Reset to original list if input is empty
+      setData(tokenData); // Reset to original list if input is empty
       return;
     }
 
@@ -42,24 +43,29 @@ const FilterList: FC<TokenDataProps> = ({ firstData, tokenData, setData }) => {
   };
 
   return (
-    <div className="w-full gap-4 h-full flex flex-col text-[#fdd52f] px-2 pt-4">
-      <div className="flex flex-col w-full h-full gap-4">
-        <div className="w-full max-w-[720px] flex flex-row items-center gap-1 pl-2 border-[1px] border-[#fdd52f] rounded-lg text-[#fdd52f] mx-auto object-cover overflow-hidden">
-          <BiSearchAlt className="text-4xl text-[#fdd52f]" />
-          <input
-            type="text"
-            value={token}
-            placeholder="Search for Token"
-            onChange={handleInputChange}
-            className="bg-grey-400 w-full py-1 outline-none bg-transparent"
-          />
-          <div className="text-[#fdd52f] font-bold px-6 py-2 border-l-[1px] border-l-[#fdd52f] bg-[#fdd52f]/5">Search</div>
+    <div className="flex flex-col gap-4 px-2 pt-4 w-full h-full text-[#fdd52f]">
+      <div className="flex flex-row justify-between items-center gap-4 w-full h-full">
+        <div className="flex flex-row justify-start items-center gap-4">
+          <p className="font-semibold text-[#090603] text-xl">
+            Token
+          </p>
+          <div className="flex flex-row items-center gap-1 bg-[#FFFFFC] pl-2 border-[#E5E7EB] border-[1px] rounded-[8px] w-full max-w-[420px] object-cover overflow-hidden text-[#9CA3AF] text-sm">
+            <BiSearchAlt className="text-2xl" />
+            <input
+              type="text"
+              value={token}
+              placeholder="Search for Token"
+              onChange={handleInputChange}
+              className="flex flex-col bg-transparent py-1 outline-none w-full min-w-[300px] h-11"
+            />
+          </div>
         </div>
-        <div className="flex flex-col w-full max-w-[720px] md:flex-row gap-3 mx-auto">
-          <FilterListButton filterData={tokenData} setData={setData} />
+
+        <div className="flex md:flex-row flex-col gap-3 mx-auto w-full">
+          <FilterListButton setData={setData} />
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

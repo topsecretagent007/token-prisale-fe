@@ -1,30 +1,31 @@
 "use client";
-import {
-  ChangeEvent,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+
+import { ChangeEvent, useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
-import Spinner from "@/components/loadings/Spinner";
+import Image from "next/image";
 import { errorAlert } from "@/components/others/ToastGroup";
-import { useSocket } from "@/contexts/SocketContext";
 import { createToken } from "@/program/web3";
 import { createCoinInfo, launchDataInfo, metadataInfo } from "@/utils/types";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { IoMdArrowRoundBack } from "react-icons/io";
+import { IoIosArrowBack } from "react-icons/io";
 import { uploadImage, uploadMetadata } from "@/utils/fileUpload";
-import ImageUpload from "../upload/ImageUpload";
-import { TbWorld } from "react-icons/tb";
-import { FaXTwitter } from "react-icons/fa6";
-import { FaTelegramPlane } from "react-icons/fa";
+import CreateTokenStep1 from "./CreateTokenStep1";
+import CreateTokenStep2 from "./CreateTokenStep2";
+import CreateTokenStep3 from "./CreateTokenStep3";
+import Spinner from "@/components/loadings/Spinner";
+import SuccessImage from "@/../public/assets/images/success.png"
+import UserContext from "@/context/UserContext";
 
 export default function CreateToken() {
-  const { isLoading, setIsLoading } = useSocket();
-  const [newCoin, setNewCoin] = useState<createCoinInfo>({} as createCoinInfo);
-
-  const [profilImageUrl, setProfileIamgeUrl] = useState<string>("");
+  const { isLoading, setIsLoading } = useContext(UserContext);
+  const [newCoin, setNewCoin] = useState<createCoinInfo>({} as createCoinInfo);  // Ensure newCoin is initialized
+  const [profileImageUrl, setProfileImageUrl] = useState<string>("");
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [createImageUrl, setCreateImageUrl] = useState<string>("");
+  const [createImagePreview, setCreateImagePreview] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<number>(1); // Keep track of the current step
+  const [tokenCreatedModal, setTokenCreateModal] = useState<boolean>(false)
+  const [newTokenMint, setNewTokenMint] = useState<string>("")
   const wallet = useWallet();
   const router = useRouter();
   const [errors, setErrors] = useState({
@@ -38,17 +39,20 @@ export default function CreateToken() {
     setErrors({
       name: !newCoin.name,
       ticker: !newCoin.ticker,
-      image: !profilImageUrl,
+      image: !profileImageUrl,
     });
-  }, [newCoin, profilImageUrl]);
+  }, [newCoin, profileImageUrl]);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
 
   const handleToRouter = (path: string) => {
+    setIsLoading(true)
     router.push(path);
   };
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setNewCoin({ ...newCoin, [e.target.id]: e.target.value });
   };
 
@@ -57,27 +61,27 @@ export default function CreateToken() {
       name: !newCoin.name,
       ticker: !newCoin.ticker,
       description: !newCoin.description,
-      image: !profilImageUrl,
+      image: !profileImageUrl,
     };
     setErrors(validationErrors);
     return !Object.values(validationErrors).includes(true);
   };
 
   const createCoin = async () => {
-    console.log("imageUrl--->", profilImageUrl, profileImagePreview)
     if (!validateForm()) {
       errorAlert("Please fix the errors before submitting.");
       return;
     }
     try {
       setIsLoading(true);
-      // Process image upload
-      const uploadedImageUrl = await uploadImage(profilImageUrl);
+      const uploadedImageUrl = await uploadImage(profileImageUrl);
       if (!uploadedImageUrl) {
         errorAlert("Image upload failed.");
         setIsLoading(false);
         return;
       }
+      const uploadedCreateImageUrl = await uploadImage(createImageUrl);
+
       const jsonData: metadataInfo = {
         name: newCoin.name,
         symbol: newCoin.ticker,
@@ -85,19 +89,24 @@ export default function CreateToken() {
         description: newCoin.description,
         presale: newCoin.presale,
         createdOn: "https://test.com",
-        twitter: newCoin.twitter || undefined,   // Only assign if it exists
-        website: newCoin.website || undefined,   // Only assign if it exists
-        telegram: newCoin.telegram || undefined   // Only assign if it exists
-      }
-      // Process metadata upload
+        twitter: newCoin.twitter || undefined,
+        website: newCoin.website || undefined,
+        telegram: newCoin.telegram || undefined,
+        discord: newCoin.discord || undefined,
+        contactEmail: newCoin.contactEmail || undefined,
+        contactTelegram: newCoin.contactTelegram || undefined,
+        gameName: newCoin.gameName || undefined,
+        gameLink: newCoin.gameLink || undefined,
+        buttonLabel: newCoin.buttonLabel || undefined,
+        gameImage: uploadedCreateImageUrl || undefined,
+
+      };
       const uploadMetadataUrl = await uploadMetadata(jsonData);
       if (!uploadMetadataUrl) {
         errorAlert("Metadata upload failed.");
         setIsLoading(false);
         return;
       }
-
-      console.log("uploadMetadataUrl ===>", uploadMetadataUrl)
 
       const coinData: launchDataInfo = {
         name: newCoin.name,
@@ -107,7 +116,7 @@ export default function CreateToken() {
         virtualReserves: 2_000_000_000,
         tokenSupply: 1_000_000_000_000,
         presale: newCoin.presale,
-      }
+      };
 
       const res = await createToken(wallet, coinData);
       if (res === "WalletError" || !res) {
@@ -115,7 +124,9 @@ export default function CreateToken() {
         setIsLoading(false);
         return;
       }
-      router.push("/");
+      console.log("created token", res)
+      setNewTokenMint(res.tokenMint.publicKey.toString())
+      setTokenCreateModal(true)
     } catch (error) {
       errorAlert("An unexpected error occurred.");
       console.error(error);
@@ -124,158 +135,121 @@ export default function CreateToken() {
     }
   };
 
-  const formValid =
-    newCoin.name &&
-    newCoin.ticker &&
-    newCoin.description &&
-    profilImageUrl
-  // newCoin.presale
-
   return (
-    <div className="w-full mx-auto px-3 pt-10 pb-16">
-      <div className="w-full flex flex-col gap-3 mx-4">
-        <div onClick={() => handleToRouter("/")} className="w-[100px] cursor-pointer text-[#fdd52f] text-2xl flex flex-row items-center gap-2 pb-2 ">
-          <IoMdArrowRoundBack />
-          Back
-        </div>
-        <h2 className="text-center text-2xl xs:text-4xl font-bold text-[#fdd52f]">
-          Solana Token Creator
-        </h2>
-        <div className="w-full text-center text-sm text-[#fdd52f] max-w-lg mx-auto">
-          Create a new coin to pump
-        </div>
-      </div>
-      <div className="w-full max-w-xl h-full justify-between items-start flex flex-col sm2:flex-row sm2:gap-10 mx-auto">
-        <div className="w-full flex flex-col gap-4 py-5">
-          <div className="flex flex-col gap-4 pt-6">
-            <div>
-              <label htmlFor="name" className="text-lg font-semibold text-[#fdd52f] flex flex-row gap-1">
-                Token Name <p className="text-red-600">*</p>
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={newCoin.name || ""}
-                onChange={handleChange}
-                placeholder="input name"
-                className={`block w-full p-2.5  rounded-lg bg-transparent text-[#fdd52f] outline-none border-[#fdd52f] border-[1px]`}
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="ticker"
-                className="text-lg font-semibold text-[#fdd52f] flex flex-row gap-1"
-              >
-                Ticker <p className="text-red-600">*</p>
-              </label>
-              <input
-                id="ticker"
-                type="text"
-                value={newCoin.ticker || ""}
-                onChange={handleChange}
-                placeholder="input ticker"
-                className={`block w-full p-2.5 rounded-lg bg-transparent text-[#fdd52f] outline-none border-[#fdd52f] border-[1px]`}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="description" className="text-lg font-semibold text-[#fdd52f] flex flex-row gap-1">
-                Description <p className="text-red-600">*</p>
-              </label>
-              <textarea
-                id="description"
-                rows={2}
-                value={newCoin.description || ""}
-                onChange={handleChange}
-                placeholder="input description ..."
-                className={`block w-full p-2.5 min-h-[160px] rounded-lg bg-transparent text-[#fdd52f] outline-none border-[#fdd52f] border-[1px]`}
-              />
-            </div>
-
-            <ImageUpload header="Project Profile Image" setFilePreview={(fileName) => setProfileImagePreview(fileName)} setFileUrl={(fileUrl) => setProfileIamgeUrl(fileUrl)} type="image/*" />
-
-            <div>
-              <label
-                htmlFor="ticker"
-                className="text-lg font-semibold text-[#fdd52f] flex flex-row gap-1"
-              >
-                Buy Token <p className="text-red-600">*</p> <p className="text-[12px]"> max = 95</p>
-              </label>
-              <input
-                id="presale"
-                type="number"
-                value={newCoin.presale}
-                onChange={handleChange}
-                placeholder="input sol amount"
-                className={`block w-full p-2.5 rounded-lg bg-transparent text-[#fdd52f] outline-none border-[#fdd52f] border-[1px]`}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="name" className="text-lg font-semibold text-[#fdd52f]">
-                Website (Optional)
-              </label>
-              <div className="w-full h-full flex flex-row border-[#fdd52f] border-[1px] rounded-lg">
-                <div className="w-14 flex flex-col items-center justify-center border-r-[#fdd52f] border-r-[1px]">
-                  <TbWorld className="text-2xl items-center justify-center text-[#fdd52f] mx-auto" />
-                </div>
-                <input
-                  type="text"
-                  id="website"
-                  value={newCoin.website || ""}
-                  onChange={handleChange}
-                  className={`block w-full p-2.5 rounded-r-lg bg-transparent text-[#fdd52f] outline-none `}
-                />
+    <div className="mx-auto px-3 pt-10 pb-16 w-full">
+      {!tokenCreatedModal ?
+        <div className="flex flex-col gap-3 mx-4 w-full">
+          <div onClick={() => handleToRouter("/")} className="flex flex-row items-center gap-2 pb-2 w-[100px] text-[#9CA3AF] text-sm cursor-pointer">
+            <IoIosArrowBack />
+            Back
+          </div>
+          <h2 className="font-bold text-[#090603] text-lg xs:text-xl text-center">
+            Create a Token
+          </h2>
+          <div className="gap-4 mx-auto w-full max-w-lg">
+            <div className="flex flex-row justify-center items-center gap-3">
+              <div className="flex flex-col justify-center items-center bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#86B3FD_0%,_#2B35E1_100%)] border-[#86B3FD] border-[1px] rounded-full w-8 h-8 font-semibold text-white">
+                1
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="name" className="text-lg font-semibold text-[#fdd52f]">
-                Twitter (Optional)
-              </label>
-              <div className="w-full h-full flex flex-row border-[#fdd52f] border-[1px] rounded-lg">
-                <div className="w-14 flex flex-col items-center justify-center border-r-[#fdd52f] border-r-[1px]">
-                  <FaXTwitter className="text-2xl items-center justify-center text-[#fdd52f] mx-auto" />
-                </div>
-                <input
-                  type="text"
-                  id="twitter"
-                  value={newCoin.twitter || ""}
-                  onChange={handleChange}
-                  className={`block w-full p-2.5 rounded-r-lg bg-transparent text-[#fdd52f] outline-none`}
-                />
+              <div className={`${currentStep >= 2 ? "border-t-[#2329B6]" : "border-t-[#FBE7A8]"}  border-t-[2px] w-full max-w-[150px] h-[2px] border-dashed`}></div>
+              <div className={`${currentStep >= 2 ? "bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#86B3FD_0%,_#2B35E1_100%)] text-white border-[#86B3FD] border-[1px]" : "bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#FFF8E8_0%,_#FCD582_100%)] text-[#9CA3AF]"} flex flex-col justify-center items-center rounded-full w-8 h-8 font-semibold `}>
+                2
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="name" className="text-lg font-semibold text-[#fdd52f]">
-                Telegram (Optional)
-              </label>
-              <div className="w-full h-full flex flex-row border-[#fdd52f] border-[1px] rounded-lg">
-                <div className="w-14 flex flex-col items-center justify-center border-r-[#fdd52f] border-r-[1px]">
-                  <FaTelegramPlane className="text-2xl items-center justify-center text-[#fdd52f] mx-auto" />
-                </div>
-                <input
-                  type="text"
-                  id="telegram"
-                  value={newCoin.telegram || ""}
-                  onChange={handleChange}
-                  className={`block w-full p-2.5 rounded-r-lg bg-transparent text-[#fdd52f] outline-none`}
-                />
+              <div className={`${currentStep >= 3 ? "border-t-[#2329B6]" : "border-t-[#FBE7A8]"}  border-t-[2px] w-full max-w-[150px] h-[2px] border-dashed`}></div>
+              <div className={`${currentStep >= 3 ? "bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#86B3FD_0%,_#2B35E1_100%)] text-white border-[#86B3FD] border-[1px]" : "bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#FFF8E8_0%,_#FCD582_100%)] text-[#9CA3AF]"} flex flex-col justify-center items-center rounded-full w-8 h-8 font-semibold`}>
+                3
               </div>
             </div>
           </div>
+
+          <div className="gap-4 mx-auto w-full max-w-lg">
+            {/* Step navigation */}
+            {currentStep === 1 && (
+              <CreateTokenStep1
+                newCoin={newCoin}
+                handleChange={handleChange}
+                setProfileImagePreview={setProfileImagePreview}
+                setProfileImageUrl={setProfileImageUrl}
+              />
+            )}
+            {currentStep === 2 && (
+              <CreateTokenStep2
+                newCoin={newCoin}
+                handleChange={handleChange}
+              />
+            )}
+            {currentStep === 3 && (
+              <CreateTokenStep3
+                newCoin={newCoin}
+                handleChange={handleChange}
+                createImage={createImageUrl}
+                setCreateImagePreview={setCreateImagePreview}
+                setCreateImageUrl={setCreateImageUrl}
+              />
+            )}
+            {/* Next button to switch steps */}
+            {currentStep === 1 && (
+              <div className="flex justify-end gap-4 mt-6">
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  disabled={!newCoin.name || !newCoin.ticker || !profileImageUrl}
+                  className={`${(!newCoin.name || !newCoin.ticker || !profileImageUrl) ? "opacity-60 cursor-not-allowed" : "opacity-100 cursor-pointer"} justify-center items-center bg-[linear-gradient(180deg,_#86B3FD_0%,_#2B35E1_100%)] border-[#86B3FD] border-[3px] rounded-[12px] w-[198px] h-11 font-semibold text-white`}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+            {currentStep === 2 && (
+              <div className="flex justify-between gap-4 mt-6">
+                <button
+                  onClick={() => setCurrentStep(3)}
+                  className="px-4 py-3 h-11 font-semibold text-[#2B35E1]"
+                >
+                  Skip
+                </button>
+
+                <button
+                  onClick={() => setCurrentStep(3)}
+                  disabled={!newCoin.telegram && !newCoin.twitter && !newCoin.website && !newCoin.discord}
+                  className={`${(!newCoin.telegram && !newCoin.twitter && !newCoin.website && !newCoin.discord) ? "opacity-60 cursor-not-allowed" : "opacity-100 cursor-pointer"} justify-center items-center bg-[linear-gradient(180deg,_#86B3FD_0%,_#2B35E1_100%)] border-[#86B3FD] border-[3px] rounded-[12px] w-[198px] h-11 font-semibold text-white`}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+            {currentStep === 3 && (
+              <div className="flex justify-end gap-4 mt-6">
+                <button
+                  onClick={() => createCoin()}
+                  className="justify-center items-center bg-[linear-gradient(180deg,_#86B3FD_0%,_#2B35E1_100%)] opacity-100 border-[#86B3FD] border-[3px] rounded-[12px] w-[198px] h-11 font-semibold text-white cursor-pointer"
+                >
+                  Create a token
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      <button
-        onClick={createCoin}
-        disabled={!formValid || isLoading}
-        className={`w-40 flex flex-col py-2 mt-16 mb-10 mx-auto px-8 border-[1px] border-[#fdd52f] rounded-full text-[#fdd52f] ${!formValid ? "opacity-50 cursor-not-allowed" : "hover:custom-gradient hover:bg-[#fdd52f]/30"}`}
-      >
-        {isLoading ? "Creating..." : "Create Coin"}
-      </button>
+        :
+        <div className="flex flex-col justify-center items-center gap-4 w-full h-full min-h-[calc(100vh-515px)]">
+          <p className="mt-7 font-bold text-[#090603] text-lg xs:text-xl text-center">
+            Token Created
+          </p>
+          <div className="flex flex-col justify-center items-center gap-4 py-14">
+            <Image src={SuccessImage} alt="SuccessImage" width={100} height={100} className="w-[100px] h-[100px]" />
+            <div className="font-bold text-[#090603] text-3xl text-center">
+              Success! Token Ready
+            </div>
+            <p className="text-[#9CA3AF] text-sm">Your new token is ready. Keep it safe</p>
+          </div>
+          <button
+            onClick={() => handleToRouter(`/presaletrade/${newTokenMint}`)}
+            className="justify-center items-center bg-[linear-gradient(180deg,_#86B3FD_0%,_#2B35E1_100%)] opacity-100 border-[#86B3FD] border-[3px] rounded-[12px] w-[198px] h-11 font-semibold text-white cursor-pointer"
+          >
+            Go to Token page
+          </button>
+        </div>
+      }
       {isLoading && <Spinner />}
-    </div >
+    </div>
   );
 }

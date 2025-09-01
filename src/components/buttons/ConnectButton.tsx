@@ -11,16 +11,13 @@ import { userInfo } from "@/utils/types";
 import { useRouter } from "next/navigation";
 import { RiExchangeDollarLine } from "react-icons/ri";
 import { VscDebugDisconnect } from "react-icons/vsc";
-import { FaWallet } from "react-icons/fa";
-import { TbMoodEdit } from "react-icons/tb";
 import UserAvatar from "@/../public/assets/images/user-avatar.png"
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import { FaChevronDown } from "react-icons/fa";
 
 
 export const ConnectButton: FC = () => {
-  const { user, setUser, login, setLogin, setIsLoading, isLoading } =
-    useContext(UserContext);
-  const { publicKey, disconnect, connect, signMessage, wallet } = useWallet();
+  const { user, setUser, login, setLogin, setIsLoading, isLoading } = useContext(UserContext);
+  const { publicKey, disconnect, signMessage } = useWallet();
   const { setVisible } = useWalletModal();
   const router = useRouter()
 
@@ -34,10 +31,7 @@ export const ConnectButton: FC = () => {
           wallet: publicKey.toBase58(),
           isLedger: false,
         };
-        console.log("updatedUser ===>", updatedUser)
-
-        let userDatas = await sign(updatedUser);
-        console.log("userDatas ==>", userDatas)
+        await sign(updatedUser);
       }
     };
     handleClick();
@@ -63,8 +57,6 @@ export const ConnectButton: FC = () => {
       const msg = new TextEncoder().encode(
         `agentland ${connection.nonce}`
       );
-
-      console.log("user.avatar ==>", user.avatar)
 
       const sig = await signMessage?.(msg);
       const res = base58.encode(sig as Uint8Array);
@@ -99,34 +91,43 @@ export const ConnectButton: FC = () => {
 
   return (
     <div>
-      <button className={`${isLoading ? "" : "z-30"} flex flex-row gap-1 items-center justify-end text-white px-4 py-2 rounded-full border-[1px] border-[#fdd52f] group relative bg-[#fdd52f]/5 hover:bg-[#fdd52f]/30`}>
+      <button className={`${isLoading ? "" : "z-30"} flex flex-row gap-1 items-center justify-end text-white px-3 py-1 group relative font-semibold cursor-pointer ${(login && publicKey) ? "rounded-full bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#FFF8E8_0%,_#FCD582_100%)]" : "border-[3px] border-[#86B3FD] bg-gradient-to-b from-[#86B3FD] to-[#2B35E1] rounded-[12px]"}`}>
         {login && publicKey ? (
           <>
-            <div className="flex items-center justify-center gap-2 text-[16px] lg:text-md">
+            <div className="flex justify-center items-center gap-2 text-[16px] lg:text-md">
               <Image
                 src={(user.avatar !== "https://scarlet-extra-cat-880.mypinata.cloud/" && user.avatar !== "" && user.avatar !== undefined && user.avatar !== null && user.avatar) ? user.avatar : UserAvatar}
                 alt="Token IMG"
-                className="rounded-full object-cover overflow-hidden w-[35px] h-[35px] border-[1px] border-[#fdd52f]"
+                className="rounded-full w-[35px] h-[35px] object-cover overflow-hidden"
                 width={35}
                 height={35}
               />
               {user?.name ?
-                <div className="w-[92px] object-cover overflow-hidden truncate text-[#fdd52f]">
+                <div className="w-[92px] object-cover overflow-hidden text-[#090603] truncate">
                   {user.name}
                 </div>
                 :
-                <div className="text-[#fdd52f]">
+                <div className="text-[#090603]">
                   {publicKey.toBase58().slice(0, 4)}....
                   {publicKey.toBase58().slice(-4)}
                 </div>
               }
-              <TbMoodEdit onClick={() => handleToProfile(`/profile/${tempUser._id}`)} className="text-2xl text-[#fdd52f]" />
+              <FaChevronDown className="text-[#090603] text-lg" />
             </div>
-            <div className="w-full absolute right-0 -bottom-[88px] hidden rounded-lg group-hover:block px-3">
-              <ul className="border-[0.75px] border-[#fdd52f] rounded-lg bg-none object-cover overflow-hidden bg-black text-[#fdd52f]">
+            <div className="hidden group-hover:block right-0 -bottom-[130px] absolute px-3 rounded-lg w-full">
+              <ul className="bg-[radial-gradient(85.4%_100%_at_50.16%_0%,_#FFF8E8_0%,_#FCD582_100%)] border-[#2B35E1] shadow-sm border-[1px] rounded-lg object-cover overflow-hidden text-[#2B35E1]">
                 <li>
                   <div
-                    className="flex flex-row gap-1 items-center mb-1 text-primary-100 text-md p-2 hover:bg-[#fdd52f]/30"
+                    className="flex flex-row items-center gap-1 hover:bg-[#fdd52f]/30 mb-1 p-2 text-md text-primary-100"
+                    onClick={() => handleToProfile(`/profile/${tempUser._id}`)}
+                  >
+                    <RiExchangeDollarLine />
+                    Profile
+                  </div>
+                </li>
+                <li>
+                  <div
+                    className="flex flex-row items-center gap-1 hover:bg-[#fdd52f]/30 mb-1 p-2 text-md text-primary-100"
                     onClick={() => setVisible(true)}
                   >
                     <RiExchangeDollarLine />
@@ -135,7 +136,7 @@ export const ConnectButton: FC = () => {
                 </li>
                 <li>
                   <div
-                    className="flex gap-1 items-center text-primary-100 text-md p-2 hover:bg-[#fdd52f]/10"
+                    className="flex items-center gap-1 hover:bg-[#fdd52f]/10 p-2 text-md text-primary-100"
                     onClick={logOut}
                   >
                     <VscDebugDisconnect />
@@ -147,10 +148,9 @@ export const ConnectButton: FC = () => {
           </>
         ) : (
           <div
-            className="flex flex-row gap-2 items-center justify-center text-md text-[#fdd52f]"
+            className="flex flex-row justify-center items-center gap-2 text-white text-base"
             onClick={() => setVisible(true)}
           >
-            <FaWallet />
             Connect Wallet
           </div>
         )}

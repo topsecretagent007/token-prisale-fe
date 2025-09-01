@@ -2,16 +2,6 @@
 import { coinInfo, msgInfo, userInfo } from '@/utils/types';
 import { createContext } from 'react';
 
-// interface WalletContextType {
-//     user : userInfo;
-//     setUser: (value: userInfo)=> void;
-
-
-// }
-// const walletContext = createContext<WalletContextType | undefined> ;
-
-// export default walletContext;
-
 const UserContext = createContext({
     user: {} as userInfo,
     setUser: (value: userInfo) => { },
@@ -19,6 +9,8 @@ const UserContext = createContext({
     setLogin: (value: boolean) => { },
     isLoading: false,
     setIsLoading: (value: boolean) => { },
+    swapLoading: false,
+    setSwapLoading: (value: boolean) => { },
     imageUrl: '/*.png',
     setImageUrl: (value: string) => { },
     isCreated: false,
@@ -39,6 +31,9 @@ const UserContext = createContext({
     setPostReplyModal: (value: boolean) => { },
     updateCoin: false,
     setUpdateCoin: (value: boolean) => { },
+    buyWowGoModalState: false,
+    setBuyWowGoModalState: (value: boolean) => { },
+
 })
 
 export default UserContext;

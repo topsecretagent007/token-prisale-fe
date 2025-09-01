@@ -5,7 +5,7 @@
 
 @layer components {
   .container {
-    @apply w-full mx-auto max-w-[1440px];
+    @apply mx-auto w-full max-w-[1440px];
   }
 }
 
@@ -24,7 +24,7 @@
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-  background: #fdd52f;
+  background: linear-gradient(180deg, #86B3FD 0%, #2B35E1 100%);
   border-radius: 5px;
 }
 
@@ -57,7 +57,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: #000;
+  background: #FFF8E8;
 }
 
 @layer utilities {
@@ -133,5 +133,40 @@ input[type="number"] {
 
   100% {
     box-shadow: 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0), 200px 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.trade-loader {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: inline-block;
+  border-top: 4px solid #FCD582;
+  border-right: 4px solid transparent;
+  box-sizing: border-box;
+  animation: traderotation 1s linear infinite;
+}
+
+.trade-loader::after {
+  content: '';
+  box-sizing: border-box;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border-left: 4px solid #2B35E1;
+  border-bottom: 4px solid transparent;
+  animation: traderotation 0.5s linear infinite reverse;
+}
+
+@keyframes traderotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
   }
 }
