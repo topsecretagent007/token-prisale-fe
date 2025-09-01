@@ -50,7 +50,7 @@ export const FinalTokenPoolData = [
 export const AdminSocialData = [
     { id: "telegram", icon: <FaTelegramPlane />, url: "https://t.me/@topsecretagent_007/" },
     { id: "youtube", icon: <FaYoutube />, url: "https://www.youtube.com/channel/UCzvCp5H48sXZDxZ1cAdlcUA" },
-    { id: "twitter", icon: <FaTwitter />, url: "https://x.com/lendon1114/" },
+    { id: "twitter", icon: <FaTwitter />, url: "https://x.com/topsecretagent_007/" },
     { id: "github", icon: <TbBrandGithubFilled />, url: "https://github.com/topsecretagent007/" },
     { id: "domain", icon: <TbWorld />, url: "https://www.tsagent.online/" },
 ]
